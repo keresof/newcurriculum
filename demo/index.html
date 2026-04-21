@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MathLab TR - TYMM 9-10 Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>MathLab TR - TYMM 9-10 Demo</h1>
+      <div class="scoreboard">
+        <span>Toplam Puan: <strong id="total-score">0</strong></span>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card">
+        <h2>1) Sayi Dogrusu Avi (9. Sinif)</h2>
+        <p id="interval-target" class="target"></p>
+        <div class="row">
+          <label>Sol Uc <input id="left-value" type="number" step="1" value="-2" /></label>
+          <label>Sol Kapsam
+            <select id="left-type">
+              <option value="[">Dahil [</option>
+              <option value="(">Haric (</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label>Sag Uc <input id="right-value" type="number" step="1" value="3" /></label>
+          <label>Sag Kapsam
+            <select id="right-type">
+              <option value="]">Dahil ]</option>
+              <option value=")">Haric )</option>
+            </select>
+          </label>
+        </div>
+        <div class="buttons">
+          <button id="check-interval">Kontrol Et</button>
+          <button id="new-interval" class="ghost">Yeni Gorev</button>
+        </div>
+        <p id="interval-feedback" class="feedback"></p>
+      </section>
+
+      <section class="card">
+        <h2>2) Fonksiyon Makinesi (10. Sinif)</h2>
+        <p id="function-target" class="target"></p>
+        <div class="row">
+          <label>a: <input id="a-slider" type="range" min="-5" max="5" step="0.1" value="1" /></label>
+          <span id="a-value">1.0</span>
+        </div>
+        <div class="row">
+          <label>b: <input id="b-slider" type="range" min="-10" max="10" step="0.1" value="0" /></label>
+          <span id="b-value">0.0</span>
+        </div>
+        <canvas id="graph" width="340" height="220"></canvas>
+        <div class="buttons">
+          <button id="check-function">Dogruyu Yakala</button>
+          <button id="new-function" class="ghost">Yeni Gorev</button>
+        </div>
+        <p id="function-feedback" class="feedback"></p>
+      </section>
+
+      <section class="card">
+        <h2>3) Olasilik Simulasyonu (9-10 Ortak)</h2>
+        <p class="target">
+          Teorik olasilik p degerini ayarla, deneyi calistir ve deneysel sonuc ile karsilastir.
+        </p>
+        <div class="row">
+          <label>p (basari olasiligi):
+            <input id="p-slider" type="range" min="0" max="1" step="0.01" value="0.5" />
+          </label>
+          <span id="p-value">0.50</span>
+        </div>
+        <div class="row">
+          <label>Deneme sayisi:
+            <input id="trial-count" type="number" min="10" max="5000" step="10" value="200" />
+          </label>
+        </div>
+        <div class="buttons">
+          <button id="run-sim">Deneyi Calistir</button>
+        </div>
+        <p id="prob-result" class="feedback"></p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Demo amaclidir. Sonraki asamada TYMM ogrenme cikti kodlari ile etiketleme eklenebilir.</p>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

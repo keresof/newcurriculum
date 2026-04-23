@@ -3,91 +3,442 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MathLab TR - TYMM 9-10 Demo</title>
+    <title>MathLab TR · TYMM 9-10 Matematik Oyun Alanı</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header class="topbar">
-      <h1>MathLab TR - TYMM 9-10 Demo</h1>
-      <div class="scoreboard">
-        <span>Toplam Puan: <strong id="total-score">0</strong></span>
-      </div>
-    </header>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">M</div>
+          <div class="brand-text">
+            <h1>MathLab TR</h1>
+            <small>TYMM 9-10 · Etkileşimli Matematik Oyun Alanı</small>
+          </div>
+        </div>
+        <div class="stats" aria-label="İstatistikler">
+          <div class="stat accent">
+            <span class="label">Puan</span>
+            <span class="value" id="stat-score">0</span>
+          </div>
+          <div class="stat ok">
+            <span class="label">Seri</span>
+            <span class="value" id="stat-streak">0</span>
+          </div>
+          <div class="stat">
+            <span class="label">Doğruluk</span>
+            <span class="value" id="stat-acc">—</span>
+          </div>
+        </div>
+      </header>
 
-    <main class="grid">
-      <section class="card">
-        <h2>1) Sayi Dogrusu Avi (9. Sinif)</h2>
-        <p id="interval-target" class="target"></p>
-        <div class="row">
-          <label>Sol Uc <input id="left-value" type="number" step="1" value="-2" /></label>
-          <label>Sol Kapsam
-            <select id="left-type">
-              <option value="[">Dahil [</option>
-              <option value="(">Haric (</option>
-            </select>
-          </label>
+      <nav class="tabs" role="tablist" aria-label="Modüller">
+        <button class="tab active" data-tab="numline" role="tab">
+          <span class="ix">A</span>
+          <span class="ttl"><strong>Sayı Doğrusu Avı</strong><span>9 · Sayılar</span></span>
+        </button>
+        <button class="tab" data-tab="function" role="tab">
+          <span class="ix">B</span>
+          <span class="ttl"><strong>Fonksiyon Makinesi</strong><span>9-10 · Doğrusal</span></span>
+        </button>
+        <button class="tab" data-tab="reffunc" role="tab">
+          <span class="ix">C</span>
+          <span class="ttl"><strong>Referans Fonksiyon</strong><span>10 · x, x², √x, 1/x, |x|</span></span>
+        </button>
+        <button class="tab" data-tab="trig" role="tab">
+          <span class="ix">D</span>
+          <span class="ttl"><strong>Trigonometri Üçgeni</strong><span>10 · sin, cos, tan</span></span>
+        </button>
+        <button class="tab" data-tab="triangle" role="tab">
+          <span class="ix">E</span>
+          <span class="ttl"><strong>Üçgen Laboratuvarı</strong><span>9 · Açı-Kenar</span></span>
+        </button>
+        <button class="tab" data-tab="prob" role="tab">
+          <span class="ix">F</span>
+          <span class="ttl"><strong>Olasılık Lab</strong><span>9-10 · Yakınsama</span></span>
+        </button>
+        <button class="tab" data-tab="bayes" role="tab">
+          <span class="ix">G</span>
+          <span class="ttl"><strong>Bayes Laboratuvarı</strong><span>10 · Koşullu Olasılık</span></span>
+        </button>
+      </nav>
+
+      <!-- ========== A · Number line ========== -->
+      <section id="mod-numline" class="module active" role="tabpanel">
+        <div class="mod-header">
+          <div>
+            <h2>Sayı Doğrusu Avı</h2>
+            <p>Hedef aralığı görsel olarak inşa et: uçları sürükle veya kaydırıcıları kullan, dolu/boş daireye tıklayarak dahil/hariç durumunu değiştir. Her etkileşim simültane güncellenir.</p>
+          </div>
+          <span class="mod-tag">MAT.9.1.2 · Sayılar</span>
         </div>
-        <div class="row">
-          <label>Sag Uc <input id="right-value" type="number" step="1" value="3" /></label>
-          <label>Sag Kapsam
-            <select id="right-type">
-              <option value="]">Dahil ]</option>
-              <option value=")">Haric )</option>
-            </select>
-          </label>
+        <div class="mod-body">
+          <div class="stage">
+            <svg class="numline" id="numline-svg" viewBox="0 0 720 240" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="legend">
+              <span><span class="sw target"></span>Hedef aralık (turuncu)</span>
+              <span><span class="sw user"></span>Senin aralığın (mor)</span>
+              <span style="margin-left:auto;color:var(--muted);">İpucu: Daireye tıkla → kapsam değişir</span>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="target" id="numline-target">Hedef yükleniyor…</div>
+            <div class="controls">
+              <div class="field">
+                <span class="lbl">Sol uç</span>
+                <input id="num-left" type="range" min="-10" max="10" step="1" value="-3" />
+                <span class="val" id="num-left-v">-3</span>
+              </div>
+              <div class="field">
+                <span class="lbl">Sağ uç</span>
+                <input id="num-right" type="range" min="-10" max="10" step="1" value="4" />
+                <span class="val" id="num-right-v">4</span>
+              </div>
+              <div class="field">
+                <span class="lbl">Sol kapsam</span>
+                <select id="num-left-type">
+                  <option value="closed">Dahil [</option>
+                  <option value="open">Hariç (</option>
+                </select>
+                <span class="val" id="num-li">[</span>
+              </div>
+              <div class="field">
+                <span class="lbl">Sağ kapsam</span>
+                <select id="num-right-type">
+                  <option value="closed">Dahil ]</option>
+                  <option value="open">Hariç )</option>
+                </select>
+                <span class="val" id="num-ri">]</span>
+              </div>
+            </div>
+            <div class="mini" id="numline-mini">
+              <div class="cell"><div class="k">Görev</div><div class="v" data-k="task">1</div></div>
+              <div class="cell"><div class="k">Doğru</div><div class="v" data-k="ok">0</div></div>
+              <div class="cell"><div class="k">Doğruluk</div><div class="v" data-k="acc">—</div></div>
+            </div>
+            <div class="actions">
+              <button class="primary" id="numline-check">Kontrol Et</button>
+              <button class="ghost" id="numline-new">Yeni Görev</button>
+              <button class="ghost" id="numline-hint">İpucu</button>
+            </div>
+            <div class="feedback" id="numline-fb"></div>
+          </div>
         </div>
-        <div class="buttons">
-          <button id="check-interval">Kontrol Et</button>
-          <button id="new-interval" class="ghost">Yeni Gorev</button>
-        </div>
-        <p id="interval-feedback" class="feedback"></p>
       </section>
 
-      <section class="card">
-        <h2>2) Fonksiyon Makinesi (10. Sinif)</h2>
-        <p id="function-target" class="target"></p>
-        <div class="row">
-          <label>a: <input id="a-slider" type="range" min="-5" max="5" step="0.1" value="1" /></label>
-          <span id="a-value">1.0</span>
+      <!-- ========== B · Function machine ========== -->
+      <section id="mod-function" class="module" role="tabpanel">
+        <div class="mod-header">
+          <div>
+            <h2>Fonksiyon Makinesi</h2>
+            <p>y = ax + b doğrusunun a (eğim) ve b (kesim) parametrelerini ayarla. Hedef noktalardan geçen doğruyu yakala.</p>
+          </div>
+          <span class="mod-tag">MAT.9.2.1 / 10.2.1 · Doğrusal</span>
         </div>
-        <div class="row">
-          <label>b: <input id="b-slider" type="range" min="-10" max="10" step="0.1" value="0" /></label>
-          <span id="b-value">0.0</span>
+        <div class="mod-body">
+          <div class="stage">
+            <div class="graph-wrap">
+              <div class="eq" id="eq">y = 1.0·x + 0.0</div>
+              <canvas id="graph"></canvas>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="target" id="function-target">Hedef yükleniyor…</div>
+            <div class="controls">
+              <div class="field">
+                <span class="lbl">a (eğim)</span>
+                <input id="a-slider" type="range" min="-5" max="5" step="0.1" value="1" />
+                <input class="val-input" id="a-num" type="number" step="0.1" min="-5" max="5" value="1.0" />
+              </div>
+              <div class="field">
+                <span class="lbl">b (kesim)</span>
+                <input id="b-slider" type="range" min="-10" max="10" step="0.1" value="0" />
+                <input class="val-input" id="b-num" type="number" step="0.1" min="-10" max="10" value="0.0" />
+              </div>
+            </div>
+            <div class="mini" id="function-mini">
+              <div class="cell"><div class="k">Görev</div><div class="v" data-k="task">1</div></div>
+              <div class="cell"><div class="k">Doğru</div><div class="v" data-k="ok">0</div></div>
+              <div class="cell"><div class="k">Doğruluk</div><div class="v" data-k="acc">—</div></div>
+            </div>
+            <div class="actions">
+              <button class="primary" id="function-check">Doğruyu Yakala</button>
+              <button class="ghost" id="function-new">Yeni Görev</button>
+              <button class="ghost" id="function-hint">İpucu</button>
+            </div>
+            <div class="feedback" id="function-fb"></div>
+          </div>
         </div>
-        <canvas id="graph" width="340" height="220"></canvas>
-        <div class="buttons">
-          <button id="check-function">Dogruyu Yakala</button>
-          <button id="new-function" class="ghost">Yeni Gorev</button>
-        </div>
-        <p id="function-feedback" class="feedback"></p>
       </section>
 
-      <section class="card">
-        <h2>3) Olasilik Simulasyonu (9-10 Ortak)</h2>
-        <p class="target">
-          Teorik olasilik p degerini ayarla, deneyi calistir ve deneysel sonuc ile karsilastir.
-        </p>
-        <div class="row">
-          <label>p (basari olasiligi):
-            <input id="p-slider" type="range" min="0" max="1" step="0.01" value="0.5" />
-          </label>
-          <span id="p-value">0.50</span>
+      <!-- ========== C · Reference function transformer ========== -->
+      <section id="mod-reffunc" class="module" role="tabpanel">
+        <div class="mod-header">
+          <div>
+            <h2>Referans Fonksiyon Transformatörü</h2>
+            <p>Bir referans fonksiyon seç ve <code>g(x) = a·f(x − r) + k</code> dönüşümünü adım adım gör. Hedef grafiği yakalamayı dene.</p>
+          </div>
+          <span class="mod-tag">10.2.2 / 10.2.3 / 10.2.4 / 9.2.2</span>
         </div>
-        <div class="row">
-          <label>Deneme sayisi:
-            <input id="trial-count" type="number" min="10" max="5000" step="10" value="200" />
-          </label>
+        <div class="mod-body">
+          <div class="stage">
+            <div class="graph-wrap">
+              <div class="eq" id="ref-eq">g(x) = 1·f(x − 0) + 0</div>
+              <canvas id="ref-canvas"></canvas>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="target" id="ref-target">Hedef yükleniyor…</div>
+            <div class="controls">
+              <div class="field">
+                <span class="lbl">Referans f(x)</span>
+                <select id="ref-base">
+                  <option value="lin">f(x) = x</option>
+                  <option value="sq" selected>f(x) = x²</option>
+                  <option value="sqrt">f(x) = √x</option>
+                  <option value="abs">f(x) = |x|</option>
+                  <option value="rec">f(x) = 1/x</option>
+                </select>
+                <span class="val mono" id="ref-base-v">x²</span>
+              </div>
+              <div class="field">
+                <span class="lbl">a (ölçek)</span>
+                <input id="ref-a" type="range" min="-3" max="3" step="0.1" value="1" />
+                <input class="val-input" id="ref-a-num" type="number" step="0.1" min="-3" max="3" value="1.0" />
+              </div>
+              <div class="field">
+                <span class="lbl">r (yatay)</span>
+                <input id="ref-r" type="range" min="-8" max="8" step="0.1" value="0" />
+                <input class="val-input" id="ref-r-num" type="number" step="0.1" min="-8" max="8" value="0.0" />
+              </div>
+              <div class="field">
+                <span class="lbl">k (dikey)</span>
+                <input id="ref-k" type="range" min="-8" max="8" step="0.1" value="0" />
+                <input class="val-input" id="ref-k-num" type="number" step="0.1" min="-8" max="8" value="0.0" />
+              </div>
+            </div>
+            <div class="mini" id="reffunc-mini">
+              <div class="cell"><div class="k">Görev</div><div class="v" data-k="task">1</div></div>
+              <div class="cell"><div class="k">Doğru</div><div class="v" data-k="ok">0</div></div>
+              <div class="cell"><div class="k">Doğruluk</div><div class="v" data-k="acc">—</div></div>
+            </div>
+            <div class="actions">
+              <button class="primary" id="ref-check">Hedefi Yakala</button>
+              <button class="ghost" id="ref-new">Yeni Görev</button>
+              <button class="ghost" id="ref-hint">İpucu</button>
+            </div>
+            <div class="feedback" id="ref-fb"></div>
+          </div>
         </div>
-        <div class="buttons">
-          <button id="run-sim">Deneyi Calistir</button>
-        </div>
-        <p id="prob-result" class="feedback"></p>
       </section>
-    </main>
 
-    <footer class="footer">
-      <p>Demo amaclidir. Sonraki asamada TYMM ogrenme cikti kodlari ile etiketleme eklenebilir.</p>
-    </footer>
+      <!-- ========== D · Trigonometry ========== -->
+      <section id="mod-trig" class="module" role="tabpanel">
+        <div class="mod-header">
+          <div>
+            <h2>Trigonometri Laboratuvarı</h2>
+            <p>Açıyı tam <b>0° – 360°</b> arasında değiştir: birim çember üzerindeki noktayı sürükle veya kaydırıcıyı kullan. sin, cos ve tan grafikleri canlı güncellenir; tüm kadranlarda işaretler ve asimptotlar görünür.</p>
+          </div>
+          <span class="mod-tag">10.4.1 · Trigonometri</span>
+        </div>
+        <div class="mod-body">
+          <div class="stage">
+            <svg class="trig" id="trig-svg" viewBox="0 0 820 480" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="legend">
+              <span><span class="sw" style="background:#10b981;"></span>sin θ</span>
+              <span><span class="sw" style="background:#6366f1;"></span>cos θ</span>
+              <span><span class="sw" style="background:#f59e0b;"></span>tan θ</span>
+              <span style="margin-left:auto;color:var(--muted);">Nokta sürüklenebilir</span>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="target" id="trig-target">Hedef yükleniyor…</div>
+            <div class="controls">
+              <div class="field">
+                <span class="lbl">θ (derece)</span>
+                <input id="trig-angle" type="range" min="0" max="360" step="1" value="30" />
+                <span class="val" id="trig-angle-v">30°</span>
+              </div>
+              <div class="field">
+                <span class="lbl">Kadran</span>
+                <span class="val mono" id="trig-quad" style="text-align:left;">I</span>
+                <span class="val mono" id="trig-rad">π/6</span>
+              </div>
+            </div>
+            <div class="readout" id="trig-readout">
+              <div><span class="lbl">sin θ</span><span class="val mono" id="trig-sin">0.500</span></div>
+              <div><span class="lbl">cos θ</span><span class="val mono" id="trig-cos">0.866</span></div>
+              <div><span class="lbl">tan θ</span><span class="val mono" id="trig-tan">0.577</span></div>
+              <div><span class="lbl">cot θ</span><span class="val mono" id="trig-cot">1.732</span></div>
+              <div><span class="lbl">sin²+cos²</span><span class="val mono" id="trig-pyt">1.000</span></div>
+              <div><span class="lbl">Referans</span><span class="val mono" id="trig-ref">30°</span></div>
+            </div>
+            <div class="mini" id="trig-mini">
+              <div class="cell"><div class="k">Görev</div><div class="v" data-k="task">1</div></div>
+              <div class="cell"><div class="k">Doğru</div><div class="v" data-k="ok">0</div></div>
+              <div class="cell"><div class="k">Doğruluk</div><div class="v" data-k="acc">—</div></div>
+            </div>
+            <div class="actions">
+              <button class="primary" id="trig-check">Açıyı Onayla</button>
+              <button class="ghost" id="trig-new">Yeni Görev</button>
+              <button class="ghost" id="trig-hint">İpucu</button>
+            </div>
+            <div class="feedback" id="trig-fb"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== E · Triangle laboratory ========== -->
+      <section id="mod-triangle" class="module" role="tabpanel">
+        <div class="mod-header">
+          <div>
+            <h2>Üçgen Laboratuvarı</h2>
+            <p>Üçgenin köşelerini sürükle. Açı toplamının her zaman 180° olduğunu, kenar uzunluklarının üçgen eşitsizliğini sağladığını ve en uzun kenarın karşısındaki açının en büyük olduğunu gözlemle.</p>
+          </div>
+          <span class="mod-tag">MAT.9.4.1 · Üçgen</span>
+        </div>
+        <div class="mod-body">
+          <div class="stage">
+            <svg class="triangle" id="triangle-svg" viewBox="0 0 720 420" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="legend">
+              <span style="margin-left:auto;color:var(--muted);">İpucu: Köşeleri sürükle</span>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="target" id="triangle-target">Hedef: <b>iç açı toplamı = 180°</b> her zaman doğrudur. Köşeleri sürükle ve kanıtla.</div>
+            <div class="readout" id="triangle-readout">
+              <div><span class="lbl">α (A)</span><span class="val mono" id="tri-a">60°</span></div>
+              <div><span class="lbl">β (B)</span><span class="val mono" id="tri-b">60°</span></div>
+              <div><span class="lbl">γ (C)</span><span class="val mono" id="tri-c">60°</span></div>
+              <div><span class="lbl">α+β+γ</span><span class="val mono" id="tri-sum">180°</span></div>
+              <div><span class="lbl">|BC|</span><span class="val mono" id="tri-la">—</span></div>
+              <div><span class="lbl">|AC|</span><span class="val mono" id="tri-lb">—</span></div>
+              <div><span class="lbl">|AB|</span><span class="val mono" id="tri-lc">—</span></div>
+              <div><span class="lbl">Eşitsizlik</span><span class="val mono" id="tri-ineq">✓</span></div>
+            </div>
+            <div class="actions">
+              <button class="ghost" id="triangle-reset">Eşkenar Sıfırla</button>
+              <button class="ghost" id="triangle-rand">Rastgele Üçgen</button>
+            </div>
+            <div class="feedback" id="triangle-fb"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== F · Probability lab ========== -->
+      <section id="mod-prob" class="module" role="tabpanel">
+        <div class="mod-header">
+          <div>
+            <h2>Olasılık Laboratuvarı</h2>
+            <p>Teorik olasılığı (p) seç, deneyi çalıştır ve teorik ile deneysel sonucun yakınsamasını gör (Büyük Sayılar Yasası).</p>
+          </div>
+          <span class="mod-tag">MAT.9.7.1-2 · Veriden Olasılığa</span>
+        </div>
+        <div class="mod-body">
+          <div class="stage">
+            <div class="prob-stage">
+              <div class="chart-card">
+                <h4>Teorik vs Deneysel</h4>
+                <svg class="bars" id="prob-bars" viewBox="0 0 280 220" preserveAspectRatio="xMidYMid meet"></svg>
+              </div>
+              <div class="chart-card">
+                <h4>Yakınsama (deneme sayısına göre)</h4>
+                <svg class="conv" id="prob-conv" viewBox="0 0 280 220" preserveAspectRatio="xMidYMid meet"></svg>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="target">Görev: Seçtiğin <b>p</b> değerine yakın bir deneysel oran elde et. Deneme arttıkça yakınsama keskinleşir.</div>
+            <div class="controls">
+              <div class="field">
+                <span class="lbl">p (başarı)</span>
+                <input id="p-slider" type="range" min="0" max="1" step="0.01" value="0.5" />
+                <span class="val" id="p-value">0.50</span>
+              </div>
+              <div class="field">
+                <span class="lbl">Deneme</span>
+                <input id="trial-count" type="number" min="20" max="5000" step="20" value="500" />
+                <span class="val" id="trial-info">500</span>
+              </div>
+            </div>
+            <div class="mini" id="prob-mini">
+              <div class="cell"><div class="k">Çalıştırma</div><div class="v" data-k="run">0</div></div>
+              <div class="cell"><div class="k">|fark|</div><div class="v" data-k="diff">—</div></div>
+              <div class="cell"><div class="k">Puan</div><div class="v" data-k="pts">0</div></div>
+            </div>
+            <div class="actions">
+              <button class="primary" id="run-sim">Deneyi Çalıştır</button>
+              <button class="ghost" id="reset-sim">Sıfırla</button>
+            </div>
+            <div class="feedback" id="prob-fb"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== G · Bayes laboratory ========== -->
+      <section id="mod-bayes" class="module" role="tabpanel">
+        <div class="mod-header">
+          <div>
+            <h2>Bayes Laboratuvarı · Hastalık Testi</h2>
+            <p>Klasik örnek: Bir hastalığın yaygınlığı, testin duyarlılığı ve özgüllüğü verildiğinde testi pozitif çıkan birinin gerçekten hasta olma olasılığı (P(H | +)) ne olur? Alan modeliyle sezgisel olarak gör.</p>
+          </div>
+          <span class="mod-tag">10.7.2 · Bayes</span>
+        </div>
+        <div class="mod-body">
+          <div class="stage">
+            <svg class="bayes" id="bayes-svg" viewBox="0 0 720 380" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="legend">
+              <span><span class="sw" style="background:#ef4444;"></span>Hasta + Pozitif (gerçek pozitif)</span>
+              <span><span class="sw" style="background:#fca5a5;"></span>Hasta + Negatif (yanlış negatif)</span>
+              <span><span class="sw" style="background:#a5b4fc;"></span>Sağlam + Pozitif (yanlış pozitif)</span>
+              <span><span class="sw" style="background:#dbeafe;"></span>Sağlam + Negatif (gerçek negatif)</span>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="target">
+              <b>P(H | +)</b> = (Duyarlılık × Yaygınlık) / Toplam Pozitif Oranı.
+              Kaydırıcılarla parametreleri değiştir, alan modelinde dağılımı ve sayısal sonucu canlı gör.
+            </div>
+            <div class="controls">
+              <div class="field">
+                <span class="lbl">Yaygınlık P(H)</span>
+                <input id="bayes-p" type="range" min="0.001" max="0.5" step="0.001" value="0.01" />
+                <span class="val mono" id="bayes-p-v">1.00%</span>
+              </div>
+              <div class="field">
+                <span class="lbl">Duyarlılık P(+|H)</span>
+                <input id="bayes-sens" type="range" min="0.5" max="1" step="0.005" value="0.95" />
+                <span class="val mono" id="bayes-sens-v">95.0%</span>
+              </div>
+              <div class="field">
+                <span class="lbl">Özgüllük P(−|¬H)</span>
+                <input id="bayes-spec" type="range" min="0.5" max="1" step="0.005" value="0.90" />
+                <span class="val mono" id="bayes-spec-v">90.0%</span>
+              </div>
+            </div>
+            <div class="readout" id="bayes-readout">
+              <div><span class="lbl">P(H | +)</span><span class="val mono" id="bayes-pv">8.76%</span></div>
+              <div><span class="lbl">P(¬H | +)</span><span class="val mono" id="bayes-npv">91.24%</span></div>
+              <div><span class="lbl">P(H | −)</span><span class="val mono" id="bayes-pnv">0.06%</span></div>
+              <div><span class="lbl">Toplam P(+)</span><span class="val mono" id="bayes-tot">10.85%</span></div>
+            </div>
+            <div class="feedback" id="bayes-fb">Şaşırtıcı: yaygın olmayan hastalıklarda yüksek duyarlılığa rağmen pozitif sonuç çoğu zaman yanlış pozitif olabilir.</div>
+          </div>
+        </div>
+      </section>
+
+      <p class="footer">
+        MathLab TR · TYMM 9-10 demo. 7 etkileşimli modül · 28 modüllük yol haritasının ilk dilimi.
+      </p>
+    </div>
+
+    <div class="toast-host" id="toast-host" aria-live="polite"></div>
 
     <script src="./app.js"></script>
   </body>

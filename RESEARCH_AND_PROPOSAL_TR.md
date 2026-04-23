@@ -1,7 +1,7 @@
 # TYMM 9-10 Matematik · PhET Benzeri İnteraktif Simülasyon Haritası
 
 > Türkiye Yüzyılı Maarif Modeli (TYMM) resmi öğretim programı kaynak alınarak
-> hazırlanmış kapsamlı araştırma ve ürün önerisi. Bu belge, `MathLab TR` demosunun
+> hazırlanmış kapsamlı araştırma ve ürün önerisi. Bu belge, `MaarifLab` demosunun
 > hangi öğrenme çıktılarını karşıladığını ve hangi simülasyonların geliştirilmesi
 > gerektiğini listeler.
 
@@ -84,7 +84,7 @@ Hazırlık sınıfı için önerilen simülasyonlar:
 
 ---
 
-## 3. Ürün Konsepti: "MathLab TR"
+## 3. Ürün Konsepti: "MaarifLab"
 
 PhET (PhET Interactive Simulations, University of Colorado) mantığıyla, her
 konuyu bir "sanal laboratuvar" olarak ele alırız. Tasarım döngüsü:

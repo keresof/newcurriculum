@@ -1,5 +1,5 @@
-// MathLab TR · TYMM 9-10 Demo
-// 7 modül: NumLine, Function, RefFunc, Trig, Triangle, Probability, Bayes
+// MaarifLab · TYMM Matematik Oyun Alanı
+// Modüller: NumLine, Venn (Classify + Ops), Function, RefFunc, Analytic, Trig, Triangle, Probability, Bayes
 //
 // =========================================================================
 // DESIGN PRINCIPLES (zorunlu — her yeni modülde uygulanmalı)
@@ -56,21 +56,35 @@ const State = {
   correct: 0,
   byModule: {
     numline:  { task: 1, ok: 0, attempts: 0 },
+    venn:     { task: 1, ok: 0, attempts: 0 },
     function: { task: 1, ok: 0, attempts: 0 },
     reffunc:  { task: 1, ok: 0, attempts: 0 },
     trig:     { task: 1, ok: 0, attempts: 0 },
-    prob:     { run: 0, pts: 0, lastDiff: null, attempts: 0, ok: 0 },
+    // Keşif modülleri (puan ve görev yok): analytic, triangle, prob, bayes
+    analytic: {},
+    triangle: {},
+    prob:     {},
+    bayes:    {},
   },
 };
 
 function saveState() {
-  try { localStorage.setItem("mathlab-tr", JSON.stringify(State)); } catch {}
+  try { localStorage.setItem("maariflab", JSON.stringify(State)); } catch {}
 }
 function loadState() {
   try {
-    const raw = localStorage.getItem("mathlab-tr");
+    // Geriye uyumluluk: önce yeni anahtar, sonra eski (mathlab-tr) denenir
+    const raw = localStorage.getItem("maariflab") || localStorage.getItem("mathlab-tr");
     if (!raw) return;
-    Object.assign(State, JSON.parse(raw));
+    const parsed = JSON.parse(raw);
+    // Güvenli merge · yeni modül anahtarlarını ezmez
+    if (parsed.byModule) {
+      for (const k in parsed.byModule) {
+        if (State.byModule[k]) Object.assign(State.byModule[k], parsed.byModule[k]);
+      }
+      delete parsed.byModule;
+    }
+    Object.assign(State, parsed);
   } catch {}
 }
 function renderGlobalStats() {
@@ -147,6 +161,22 @@ function initTabs() {
       // Re-render canvases that depend on size when tab opens
       if (key === "function") FunctionMod.resize();
       if (key === "reffunc") RefFuncMod.resize();
+    });
+  });
+}
+
+// Modül içi iç sekmeler (ör. B · Kümeler: Sınıflandırma | Küme İşlemleri)
+function initInnerTabs() {
+  $$(".inner-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const section = btn.closest("section");
+      if (!section) return;
+      const key = btn.dataset.inner;
+      section.querySelectorAll(".inner-tab").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      section.querySelectorAll(".inner-panel").forEach((p) => p.classList.remove("active"));
+      const panel = section.querySelector(`[data-inner-panel="${key}"]`);
+      if (panel) panel.classList.add("active");
     });
   });
 }
@@ -420,7 +450,785 @@ const NumLine = (() => {
 })();
 
 // ============================================================
-// Module B · Function machine (linear y=ax+b)
+// Module A2 · Interval operations on the number line · keşif
+// -------------
+// İki aralık A, B + evrensel küme E = ℝ. İşlem seçilir, sonuç sayı doğrusunda
+// renklenir ve hem aralık hem küme gösterimiyle okunur. Küme ↔ aralık köprüsü.
+// ============================================================
+const IntervalOpsMod = (() => {
+  const svg = $("#aops-svg");
+  const W = 720, H = 320;
+  const padX = 50, padR = 30;
+  // Üç satır: A (üst), B (orta), Sonuç (alt)
+  const Y_A = 70, Y_B = 140, Y_R = 240;
+  const xToPx = (x) => padX + ((x + 10) / 20) * (W - padX - padR);
+  const pxToX = (px) => Math.round(((px - padX) / (W - padX - padR)) * 20 - 10);
+
+  const A = { lo: -3, hi: 4, loClosed: true, hiClosed: true };
+  const B = { lo: 1, hi: 7, loClosed: true, hiClosed: false };
+  let currentOp = "union";
+  const refs = {};
+  let dragging = null;
+
+  const OPS = {
+    union:    { sym: "∪",  label: "A ∪ B",     desc: "<b>Birleşim</b>: A'da <b>veya</b> B'de olan x'ler. A ∪ B = { x | x ∈ A veya x ∈ B }" },
+    inter:    { sym: "∩",  label: "A ∩ B",     desc: "<b>Kesişim</b>: A'da <b>ve</b> B'de olan x'ler. A ∩ B = { x | x ∈ A ve x ∈ B }" },
+    diff_ab:  { sym: "\\", label: "A \\ B",    desc: "<b>Fark</b>: A'da olup B'de olmayan x'ler. A \\ B = A ∩ B'" },
+    diff_ba:  { sym: "\\", label: "B \\ A",    desc: "<b>Fark</b>: B'de olup A'da olmayan x'ler. B \\ A = B ∩ A'" },
+    comp_a:   { sym: "′",  label: "A′",        desc: "<b>Tümleme</b>: E \\ A. A'da olmayan tüm gerçek sayılar." },
+    comp_b:   { sym: "′",  label: "B′",        desc: "<b>Tümleme</b>: E \\ B." },
+    sym:      { sym: "△",  label: "A △ B",     desc: "<b>Simetrik fark</b>: A'da veya B'de olup ikisinde birden olmayan. (A ∪ B) \\ (A ∩ B)" },
+  };
+
+  function buildSVG() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    // Üç yatay eksen (A, B, Sonuç)
+    [Y_A, Y_B, Y_R].forEach((y) => {
+      svg.appendChild(svgEl("line", {
+        class: "axis", x1: padX, y1: y, x2: W - padR, y2: y,
+      }));
+      for (let x = -10; x <= 10; x += 1) {
+        const px = xToPx(x);
+        const big = x % 5 === 0;
+        svg.appendChild(svgEl("line", {
+          class: "tick",
+          x1: px, y1: y - (big ? 6 : 3),
+          x2: px, y2: y + (big ? 6 : 3),
+        }));
+        if (big && y === Y_R) {
+          const t = svg.appendChild(svgEl("text", {
+            class: "tick-label", x: px, y: y + 22, "text-anchor": "middle",
+          }));
+          t.textContent = x;
+        }
+      }
+    });
+
+    // Satır etiketleri
+    [
+      { y: Y_A, text: "A" },
+      { y: Y_B, text: "B" },
+      { y: Y_R, text: "A ? B" },
+    ].forEach((lbl, i) => {
+      const el = svg.appendChild(svgEl("text", {
+        class: "row-label", x: 14, y: lbl.y + 4,
+      }));
+      el.textContent = lbl.text;
+      if (i === 2) refs.labelRes = el;
+    });
+
+    // A band + endpoints
+    refs.aBand = svg.appendChild(svgEl("rect", { class: "band-a", y: Y_A - 9, height: 18, rx: 4 }));
+    refs.aLo = svg.appendChild(svgEl("circle", {
+      class: "endpoint a closed", cy: Y_A, r: 8, "data-side": "A-lo",
+    }));
+    refs.aHi = svg.appendChild(svgEl("circle", {
+      class: "endpoint a closed", cy: Y_A, r: 8, "data-side": "A-hi",
+    }));
+    refs.aLoLbl = svg.appendChild(svgEl("text", { class: "endpoint-label", y: Y_A - 18, "text-anchor": "middle" }));
+    refs.aHiLbl = svg.appendChild(svgEl("text", { class: "endpoint-label", y: Y_A - 18, "text-anchor": "middle" }));
+
+    // B band + endpoints
+    refs.bBand = svg.appendChild(svgEl("rect", { class: "band-b", y: Y_B - 9, height: 18, rx: 4 }));
+    refs.bLo = svg.appendChild(svgEl("circle", {
+      class: "endpoint b closed", cy: Y_B, r: 8, "data-side": "B-lo",
+    }));
+    refs.bHi = svg.appendChild(svgEl("circle", {
+      class: "endpoint b closed", cy: Y_B, r: 8, "data-side": "B-hi",
+    }));
+    refs.bLoLbl = svg.appendChild(svgEl("text", { class: "endpoint-label", y: Y_B - 18, "text-anchor": "middle" }));
+    refs.bHiLbl = svg.appendChild(svgEl("text", { class: "endpoint-label", y: Y_B - 18, "text-anchor": "middle" }));
+
+    // Result bands (bir işlem birden fazla parçalı olabilir — dinamik)
+    refs.resGroup = svg.appendChild(svgEl("g", {}));
+
+    // Drag handlers
+    [refs.aLo, refs.aHi, refs.bLo, refs.bHi].forEach((n) => {
+      n.addEventListener("pointerdown", onDragStart);
+      n.addEventListener("click", (e) => {
+        if (!dragging || !dragging.moved) toggleClosed(n.dataset.side);
+        dragging = null;
+      });
+    });
+  }
+
+  function onDragStart(e) {
+    e.preventDefault();
+    const n = e.currentTarget;
+    n.setPointerCapture?.(e.pointerId);
+    dragging = { side: n.dataset.side, moved: false };
+    n.addEventListener("pointermove", onDragMove);
+    n.addEventListener("pointerup", onDragEnd);
+    n.addEventListener("pointercancel", onDragEnd);
+  }
+  function onDragMove(e) {
+    if (!dragging) return;
+    const rect = svg.getBoundingClientRect();
+    const ratio = W / rect.width;
+    const px = (e.clientX - rect.left) * ratio;
+    const x = clamp(pxToX(px), -10, 10);
+    if (Math.abs(x - getEnd(dragging.side)) > 0) dragging.moved = true;
+    setEnd(dragging.side, x);
+    render();
+  }
+  function onDragEnd(e) {
+    const n = e.currentTarget;
+    n.removeEventListener("pointermove", onDragMove);
+    n.removeEventListener("pointerup", onDragEnd);
+    n.removeEventListener("pointercancel", onDragEnd);
+    n.releasePointerCapture?.(e.pointerId);
+    setTimeout(() => { dragging = null; }, 0);
+  }
+  function getEnd(side) {
+    if (side === "A-lo") return A.lo;
+    if (side === "A-hi") return A.hi;
+    if (side === "B-lo") return B.lo;
+    return B.hi;
+  }
+  function setEnd(side, v) {
+    if (side === "A-lo") A.lo = Math.min(v, A.hi);
+    else if (side === "A-hi") A.hi = Math.max(v, A.lo);
+    else if (side === "B-lo") B.lo = Math.min(v, B.hi);
+    else if (side === "B-hi") B.hi = Math.max(v, B.lo);
+  }
+  function toggleClosed(side) {
+    if (side === "A-lo") A.loClosed = !A.loClosed;
+    else if (side === "A-hi") A.hiClosed = !A.hiClosed;
+    else if (side === "B-lo") B.loClosed = !B.loClosed;
+    else if (side === "B-hi") B.hiClosed = !B.hiClosed;
+    render();
+  }
+
+  // ===== Aralık cebiri (union / inter / diff / complement) =====
+  // Aralık = { lo, hi, loClosed, hiClosed }. Sonuç: aralıkların listesi.
+  // Basit algoritma: [-10,10] eksenini yoğun örnekle, her x için A ve B içinde mi
+  // olduğunu bul, sonucu bölgelere ayır. Pedagojik görsel için yeterli; kesin
+  // sınır davranışını (dahil/hariç) ayrıca hesaplayıp işaretleyeceğiz.
+  const EPS = 0.001;
+  function inInterval(x, iv) {
+    if (iv.lo > x || iv.hi < x) return false;
+    if (iv.lo === x && !iv.loClosed) return false;
+    if (iv.hi === x && !iv.hiClosed) return false;
+    return true;
+  }
+  function opTest(x, op) {
+    const inA = inInterval(x, A);
+    const inB = inInterval(x, B);
+    switch (op) {
+      case "union":   return inA || inB;
+      case "inter":   return inA && inB;
+      case "diff_ab": return inA && !inB;
+      case "diff_ba": return inB && !inA;
+      case "comp_a":  return !inA;
+      case "comp_b":  return !inB;
+      case "sym":     return (inA !== inB);
+    }
+    return false;
+  }
+  // Sonucu parçalara ayır — sampling tabanlı
+  function computeResultParts(op) {
+    const parts = [];
+    const xs = [-10];
+    // Önemli noktalar: A ve B'nin uçları + -10, 10
+    [-10, 10, A.lo, A.hi, B.lo, B.hi].forEach((v) => { if (!xs.includes(v)) xs.push(v); });
+    xs.sort((a, b) => a - b);
+    // Her bölgeyi ortasından test et
+    for (let i = 0; i < xs.length - 1; i++) {
+      const lo = xs[i], hi = xs[i + 1];
+      const mid = (lo + hi) / 2;
+      if (opTest(mid, op)) {
+        // Uç noktaları dahil/hariç hesabı
+        const loClosed = closedAt(lo, op, true);
+        const hiClosed = closedAt(hi, op, false);
+        // Önceki parça ile birleşebilir mi?
+        const prev = parts[parts.length - 1];
+        if (prev && prev.hi === lo && (prev.hiClosed || loClosed)) {
+          prev.hi = hi;
+          prev.hiClosed = hiClosed;
+        } else {
+          parts.push({ lo, hi, loClosed, hiClosed });
+        }
+      }
+    }
+    return parts;
+  }
+  function closedAt(x, op, atLowerEnd) {
+    // x noktası sonuca dahil mi? Sonuç aralığında ise x'teki dahillik
+    return opTest(x, op);
+  }
+
+  // ===== Rendering =====
+  function render() {
+    // A band
+    const aLoPx = xToPx(A.lo), aHiPx = xToPx(A.hi);
+    setAttrs(refs.aBand, { x: aLoPx, width: aHiPx - aLoPx });
+    setAttrs(refs.aLo, { cx: aLoPx, class: "endpoint a " + (A.loClosed ? "closed" : "open") });
+    setAttrs(refs.aHi, { cx: aHiPx, class: "endpoint a " + (A.hiClosed ? "closed" : "open") });
+    refs.aLoLbl.setAttribute("x", aLoPx);
+    refs.aLoLbl.textContent = `${A.loClosed ? "[" : "("}${A.lo}`;
+    refs.aHiLbl.setAttribute("x", aHiPx);
+    refs.aHiLbl.textContent = `${A.hi}${A.hiClosed ? "]" : ")"}`;
+
+    // B band
+    const bLoPx = xToPx(B.lo), bHiPx = xToPx(B.hi);
+    setAttrs(refs.bBand, { x: bLoPx, width: bHiPx - bLoPx });
+    setAttrs(refs.bLo, { cx: bLoPx, class: "endpoint b " + (B.loClosed ? "closed" : "open") });
+    setAttrs(refs.bHi, { cx: bHiPx, class: "endpoint b " + (B.hiClosed ? "closed" : "open") });
+    refs.bLoLbl.setAttribute("x", bLoPx);
+    refs.bLoLbl.textContent = `${B.loClosed ? "[" : "("}${B.lo}`;
+    refs.bHiLbl.setAttribute("x", bHiPx);
+    refs.bHiLbl.textContent = `${B.hi}${B.hiClosed ? "]" : ")"}`;
+
+    // Result
+    while (refs.resGroup.firstChild) refs.resGroup.removeChild(refs.resGroup.firstChild);
+    const parts = computeResultParts(currentOp);
+    parts.forEach((p) => {
+      const px1 = xToPx(Math.max(-10, p.lo));
+      const px2 = xToPx(Math.min(10, p.hi));
+      refs.resGroup.appendChild(svgEl("rect", {
+        class: "band-res", x: px1, y: Y_R - 9, width: px2 - px1, height: 18, rx: 4,
+      }));
+      // Uç noktalar (sadece ±10 içinde olanlar işaretli)
+      if (p.lo > -10) {
+        refs.resGroup.appendChild(svgEl("circle", {
+          cx: px1, cy: Y_R, r: 7, "stroke-width": 3,
+          stroke: "#b45309", fill: p.loClosed ? "#b45309" : "#fff",
+        }));
+      }
+      if (p.hi < 10) {
+        refs.resGroup.appendChild(svgEl("circle", {
+          cx: px2, cy: Y_R, r: 7, "stroke-width": 3,
+          stroke: "#b45309", fill: p.hiClosed ? "#b45309" : "#fff",
+        }));
+      }
+    });
+
+    // Readout
+    const op = OPS[currentOp];
+    refs.labelRes.textContent = op.label;
+    $("#aops-op-v").textContent = op.sym;
+    $("#aops-info").innerHTML = op.desc;
+
+    $("#aops-a").textContent = fmtIv(A);
+    $("#aops-b").textContent = fmtIv(B);
+    $("#aops-a-set").textContent = fmtSet(A);
+    $("#aops-b-set").textContent = fmtSet(B);
+    $("#aops-res").textContent = fmtParts(parts);
+    $("#aops-res-set").textContent = fmtPartsSet(parts, op.label);
+  }
+
+  function fmtIv(iv) {
+    if (iv.lo > iv.hi) return "∅";
+    return `${iv.loClosed ? "[" : "("}${iv.lo}, ${iv.hi}${iv.hiClosed ? "]" : ")"}`;
+  }
+  function fmtSet(iv) {
+    return `{ x ∈ ℝ : ${iv.lo} ${iv.loClosed ? "≤" : "<"} x ${iv.hiClosed ? "≤" : "<"} ${iv.hi} }`;
+  }
+  function fmtParts(parts) {
+    if (parts.length === 0) return "∅";
+    return parts.map((p) => {
+      const lo = p.lo <= -10 ? "(−∞" : `${p.loClosed ? "[" : "("}${p.lo}`;
+      const hi = p.hi >= 10 ? "∞)" : `${p.hi}${p.hiClosed ? "]" : ")"}`;
+      return `${lo}, ${hi}`;
+    }).join(" ∪ ");
+  }
+  function fmtPartsSet(parts) {
+    if (parts.length === 0) return "∅";
+    if (parts.length === 1) {
+      const p = parts[0];
+      const loPart = p.lo <= -10 ? "" : `${p.lo} ${p.loClosed ? "≤" : "<"} x`;
+      const hiPart = p.hi >= 10 ? "" : `x ${p.hiClosed ? "≤" : "<"} ${p.hi}`;
+      const mid = loPart && hiPart ? `${loPart} ${p.hiClosed ? "≤" : "<"} ${p.hi}` : (loPart || hiPart);
+      if (!mid) return "ℝ";
+      // Güzel düzenleme
+      if (loPart && hiPart) {
+        return `{ x ∈ ℝ : ${p.lo} ${p.loClosed ? "≤" : "<"} x ${p.hiClosed ? "≤" : "<"} ${p.hi} }`;
+      }
+      return `{ x ∈ ℝ : ${mid} }`;
+    }
+    return `{ x ∈ ℝ : ${parts.map((p) => {
+      const loPart = p.lo <= -10 ? "" : `${p.lo} ${p.loClosed ? "≤" : "<"} x`;
+      const hiPart = p.hi >= 10 ? "" : `x ${p.hiClosed ? "≤" : "<"} ${p.hi}`;
+      if (loPart && hiPart) return `(${p.lo} ${p.loClosed ? "≤" : "<"} x ${p.hiClosed ? "≤" : "<"} ${p.hi})`;
+      return loPart || hiPart;
+    }).join(" veya ")} }`;
+  }
+
+  function reset() {
+    A.lo = -3; A.hi = 4; A.loClosed = true; A.hiClosed = true;
+    B.lo = 1;  B.hi = 7; B.loClosed = true; B.hiClosed = false;
+    render();
+  }
+  function randomize() {
+    const r = (min, max) => randomInt(min, max);
+    A.lo = r(-9, 2); A.hi = r(A.lo + 2, 8); A.loClosed = Math.random() > 0.5; A.hiClosed = Math.random() > 0.5;
+    B.lo = r(-9, 2); B.hi = r(B.lo + 2, 8); B.loClosed = Math.random() > 0.5; B.hiClosed = Math.random() > 0.5;
+    render();
+  }
+
+  function init() {
+    buildSVG();
+    $("#aops-op").addEventListener("change", () => {
+      currentOp = $("#aops-op").value;
+      render();
+    });
+    $("#aops-reset").addEventListener("click", reset);
+    $("#aops-random").addEventListener("click", randomize);
+    render();
+  }
+  return { init };
+})();
+
+// ============================================================
+// Module B · Number-set Venn universe
+// -------------
+// Görev-tabanlı (DESIGN #1): kullanıcı verilen sayıyı ait olduğu
+// en dar kümenin bölgesine tıklayarak sınıflandırır.
+// Kontrol: sayı kategorisi (N/Z/Q/I) ile tıklanan bölgenin id'si.
+// ============================================================
+const VennMod = (() => {
+  const svg = $("#venn-svg");
+  const W = 720, H = 420;
+  const CX = 310, CY = 210;
+  // Konsantrik yarıçaplar (N içte, R dışta)
+  const R_R = 190, R_Q = 150, R_Z = 105, R_N = 55;
+
+  // Küçük, kolay okunan havuz
+  const POOL = [
+    { label: "5", cat: "N" }, { label: "12", cat: "N" }, { label: "0", cat: "N" },
+    { label: "-3", cat: "Z" }, { label: "-17", cat: "Z" }, { label: "-1", cat: "Z" },
+    { label: "3/4", cat: "Q" }, { label: "-5/2", cat: "Q" }, { label: "0.25", cat: "Q" }, { label: "1.3", cat: "Q" },
+    { label: "√2", cat: "I" }, { label: "π", cat: "I" }, { label: "e", cat: "I" }, { label: "√5", cat: "I" },
+  ];
+  const CAT_LABELS = { N: "ℕ (doğal)", Z: "ℤ (tam)", Q: "ℚ (rasyonel)", I: "ℝ\\ℚ (irrasyonel)" };
+
+  let target = null; // { label, cat }
+  const refs = {};
+
+  function buildSVG() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    // R ring (ℝ) — largest. Tıklandığında "I" (irrasyonel) kabul edilir
+    // çünkü ℝ içinde ℚ dışında olmak irrasyoneldir.
+    refs.R = svg.appendChild(svgEl("circle", {
+      class: "set-region I", "data-cat": "I",
+      cx: CX, cy: CY, r: R_R,
+    }));
+    refs.Q = svg.appendChild(svgEl("circle", {
+      class: "set-region Q", "data-cat": "Q",
+      cx: CX, cy: CY, r: R_Q,
+    }));
+    refs.Z = svg.appendChild(svgEl("circle", {
+      class: "set-region Z", "data-cat": "Z",
+      cx: CX, cy: CY, r: R_Z,
+    }));
+    refs.N = svg.appendChild(svgEl("circle", {
+      class: "set-region N", "data-cat": "N",
+      cx: CX, cy: CY, r: R_N,
+    }));
+
+    // Static labels
+    const addLabel = (x, y, text, color) => {
+      const t = svg.appendChild(svgEl("text", {
+        x, y, class: "set-label", "text-anchor": "middle", fill: color,
+      }));
+      t.textContent = text;
+    };
+    addLabel(CX, CY + 6, "ℕ", "#3730a3");
+    addLabel(CX, CY - R_N - 14, "ℤ", "#5b21b6");
+    addLabel(CX, CY - R_Z - 14, "ℚ", "#86198f");
+    addLabel(CX, CY - R_Q - 14, "ℝ", "#991b1b");
+    addLabel(CX + R_R - 30, CY + 10, "irrasyonel", "#991b1b");
+
+    // Target chip (right side panel area)
+    refs.chipCircle = svg.appendChild(svgEl("circle", {
+      class: "number-chip", cx: W - 110, cy: 90, r: 50,
+    }));
+    refs.chipText = svg.appendChild(svgEl("text", {
+      class: "number-text", x: W - 110, y: 98,
+    }));
+    const hint = svg.appendChild(svgEl("text", {
+      x: W - 110, y: 160, "text-anchor": "middle", fill: "#94a3b8",
+      "font-size": 11, "font-weight": 700,
+    }));
+    hint.textContent = "bu sayıyı yerleştir";
+
+    // Event delegation · SVG üzerindeki tıklamadan doğru (en üstteki) bölgeyi bul.
+    // İç içe circle olduğu için bubbling yanlış handler'ı tetiklerdi; bu yaklaşım
+    // her zaman tıklanan noktanın en iç matching bölgesini kullanır.
+    svg.addEventListener("click", (e) => {
+      const cat = e.target?.dataset?.cat;
+      if (cat) onRegionClick(cat);
+    });
+  }
+
+  function newTask() {
+    target = POOL[randomInt(0, POOL.length - 1)];
+    State.byModule.venn.task = (State.byModule.venn.task || 0) + 1;
+    refs.chipText.textContent = target.label;
+    $("#venn-target").innerHTML =
+      `Hedef: <b>${target.label}</b> sayısını ait olduğu <b>en dar kümenin bölgesine</b> tıkla.`;
+    $("#venn-fb").textContent = "Venn şemasındaki doğru bölgeye tıkla.";
+    $("#venn-fb").className = "feedback";
+    renderModuleMini("venn");
+  }
+
+  function onRegionClick(clickedCat) {
+    if (!target) return;
+    const fb = $("#venn-fb");
+    const correct = clickedCat === target.cat;
+    if (correct) {
+      fb.innerHTML = `<b>Doğru!</b> ${target.label} ∈ ${CAT_LABELS[target.cat]}. +10 puan`;
+      fb.className = "feedback ok";
+      toast(`${target.label} · ${CAT_LABELS[target.cat]}`, "ok");
+      recordAttempt("venn", true, 10);
+      setTimeout(newTask, 900);
+    } else {
+      fb.innerHTML = `Değil. ${target.label} ∈ <b>${CAT_LABELS[target.cat]}</b> (sen ${CAT_LABELS[clickedCat]}'a tıkladın). Tekrar dene.`;
+      fb.className = "feedback warn";
+      recordAttempt("venn", false);
+    }
+  }
+
+  function hint() {
+    if (!target) return;
+    toast(`${target.label} için en dar küme: ${CAT_LABELS[target.cat]}`);
+  }
+
+  function init() {
+    buildSVG();
+    $("#venn-new").addEventListener("click", newTask);
+    $("#venn-hint").addEventListener("click", hint);
+    newTask();
+  }
+  return { init };
+})();
+
+// ============================================================
+// Module B2 · Set operations studio (inner tab of B · Kümeler)
+// -------------
+// Keşif modülü · puan yok (DESIGN #1).
+// Evrensel küme E = {1..12}. Her eleman 4 bölgeden birinde:
+//   "A"   → A \ B (A'nın tek parçası)
+//   "AB"  → A ∩ B
+//   "B"   → B \ A
+//   "out" → E \ (A ∪ B)
+// Elemente tıklama 4 bölge arasında sıralı döner.
+// İşlem seçildiğinde sonuç kümesine ait tüm chipler vurgulanır.
+// ============================================================
+const VennOpsMod = (() => {
+  const svg = $("#venn-ops-svg");
+  const W = 720, H = 480;
+  const UNI = { x: 30, y: 40, w: 660, h: 410, rx: 14 };
+  const A = { cx: 260, cy: 250, r: 150 };
+  const B = { cx: 460, cy: 250, r: 150 };
+  const ELEMENTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  // Region order for click rotation (drag yoksa fallback)
+  const REGIONS = ["A", "AB", "B", "out"];
+  const CHIP_R = 17;
+  const DRAG_THRESHOLD = 5; // px; altında tıklama kabul edilir
+
+  // Element → region (kategorik); positions[e] = {x, y} (görsel konum)
+  const assignment = {};
+  const positions = {};
+  const refs = { chips: {} };
+  let currentOp = "union";
+  let drag = null; // { id, startClientX, startClientY, startX, startY, moved, pointerId }
+
+  // Each op: which regions its result contains
+  const OPS = {
+    union:        { label: "A ∪ B",       sym: "∪",  regions: ["A", "AB", "B"],
+                    desc: "A'da <b>veya</b> B'de olan tüm elementler." },
+    intersection: { label: "A ∩ B",       sym: "∩",  regions: ["AB"],
+                    desc: "A'da <b>ve</b> B'de olan elementler." },
+    diff_ab:      { label: "A \\ B",      sym: "\\",  regions: ["A"],
+                    desc: "A'da olup B'de olmayan elementler." },
+    diff_ba:      { label: "B \\ A",      sym: "\\",  regions: ["B"],
+                    desc: "B'de olup A'da olmayan elementler." },
+    comp_a:       { label: "A′",          sym: "′",  regions: ["B", "out"],
+                    desc: "A'nın tümleyeni: E'de olup A'da olmayan elementler." },
+    comp_b:       { label: "B′",          sym: "′",  regions: ["A", "out"],
+                    desc: "B'nin tümleyeni: E'de olup B'de olmayan elementler." },
+    sym_diff:     { label: "A △ B",       sym: "△",  regions: ["A", "B"],
+                    desc: "Simetrik fark: A'da <b>ya da</b> B'de olup ikisinde birden olmayan." },
+    union_comp:   { label: "(A ∪ B)′",    sym: "′",  regions: ["out"],
+                    desc: "De Morgan: (A ∪ B)′ = A′ ∩ B′ — her ikisinin de dışında kalanlar." },
+    inter_comp:   { label: "(A ∩ B)′",    sym: "′",  regions: ["A", "B", "out"],
+                    desc: "De Morgan: (A ∩ B)′ = A′ ∪ B′ — ortak olmayan her şey." },
+  };
+
+  function buildSVG() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    // Universe frame
+    svg.appendChild(svgEl("rect", {
+      class: "universe-frame",
+      x: UNI.x, y: UNI.y, width: UNI.w, height: UNI.h, rx: UNI.rx,
+    }));
+    const lblE = svg.appendChild(svgEl("text", {
+      class: "label-E", x: UNI.x + 14, y: UNI.y + 22,
+    }));
+    lblE.textContent = "E (evrensel küme)";
+
+    // Two sets
+    svg.appendChild(svgEl("circle", { class: "set-A", cx: A.cx, cy: A.cy, r: A.r }));
+    svg.appendChild(svgEl("circle", { class: "set-B", cx: B.cx, cy: B.cy, r: B.r }));
+    const la = svg.appendChild(svgEl("text", { class: "label-A", x: A.cx - A.r + 14, y: A.cy - A.r + 30 }));
+    la.textContent = "A";
+    const lb = svg.appendChild(svgEl("text", { class: "label-B", x: B.cx + B.r - 32, y: B.cy - B.r + 30 }));
+    lb.textContent = "B";
+
+    // Chips — one <g> per element (sürüklenebilir)
+    ELEMENTS.forEach((e) => {
+      const g = svg.appendChild(svgEl("g", { class: "chip", "data-el": e }));
+      g.appendChild(svgEl("circle", { class: "chip-circle", r: CHIP_R, cx: 0, cy: 0 }));
+      const t = g.appendChild(svgEl("text", {
+        class: "chip-text", x: 0, y: 0,
+        "text-anchor": "middle", "dominant-baseline": "central",
+      }));
+      t.textContent = String(e);
+      g.addEventListener("pointerdown", (ev) => onPointerDown(ev, e));
+      refs.chips[e] = g;
+    });
+  }
+
+  // ===== Drag & drop =====
+  function svgPointFromEvent(e) {
+    const rect = svg.getBoundingClientRect();
+    const ratio = W / rect.width;
+    return {
+      x: (e.clientX - rect.left) * ratio,
+      y: (e.clientY - rect.top) * ratio,
+    };
+  }
+
+  function onPointerDown(e, id) {
+    e.preventDefault();
+    const g = refs.chips[id];
+    g.setPointerCapture?.(e.pointerId);
+    drag = {
+      id,
+      pointerId: e.pointerId,
+      startClient: { x: e.clientX, y: e.clientY },
+      startPos: { x: positions[id].x, y: positions[id].y },
+      moved: false,
+    };
+    g.addEventListener("pointermove", onPointerMove);
+    g.addEventListener("pointerup", onPointerUp);
+    g.addEventListener("pointercancel", onPointerUp);
+  }
+
+  function onPointerMove(e) {
+    if (!drag) return;
+    const dxClient = e.clientX - drag.startClient.x;
+    const dyClient = e.clientY - drag.startClient.y;
+    if (Math.hypot(dxClient, dyClient) > DRAG_THRESHOLD) drag.moved = true;
+    if (!drag.moved) return;
+    const rect = svg.getBoundingClientRect();
+    const ratio = W / rect.width;
+    let x = drag.startPos.x + dxClient * ratio;
+    let y = drag.startPos.y + dyClient * ratio;
+    // Universe içinde sıkıştır
+    x = clamp(x, UNI.x + CHIP_R + 2, UNI.x + UNI.w - CHIP_R - 2);
+    y = clamp(y, UNI.y + CHIP_R + 2, UNI.y + UNI.h - CHIP_R - 2);
+    positions[drag.id] = { x, y };
+    setAttrs(refs.chips[drag.id], { transform: `translate(${x} ${y})` });
+  }
+
+  function onPointerUp(e) {
+    if (!drag) return;
+    const g = refs.chips[drag.id];
+    g.removeEventListener("pointermove", onPointerMove);
+    g.removeEventListener("pointerup", onPointerUp);
+    g.removeEventListener("pointercancel", onPointerUp);
+    g.releasePointerCapture?.(drag.pointerId);
+
+    if (!drag.moved) {
+      // Tıklama → sıradaki bölgeye rotate et, o bölgenin merkezine snap
+      const id = drag.id;
+      const cur = assignment[id];
+      const next = REGIONS[(REGIONS.indexOf(cur) + 1) % REGIONS.length];
+      assignment[id] = next;
+      positions[id] = pickPosInRegion(next, id);
+      applyPosition(id);
+    } else {
+      // Drag → pozisyondan bölgeyi hesapla; overlap varsa hafif itele
+      assignment[drag.id] = regionAt(positions[drag.id].x, positions[drag.id].y);
+      resolveOverlap(drag.id);
+    }
+    drag = null;
+    update();
+  }
+
+  // Bir noktanın hangi bölgeye düştüğü (A\B, A∩B, B\A veya dışarı)
+  function regionAt(x, y) {
+    const inA = (x - A.cx) ** 2 + (y - A.cy) ** 2 <= A.r ** 2;
+    const inB = (x - B.cx) ** 2 + (y - B.cy) ** 2 <= B.r ** 2;
+    if (inA && inB) return "AB";
+    if (inA) return "A";
+    if (inB) return "B";
+    return "out";
+  }
+
+  // Yeni bir chip için verilen bölgede uygun boş pozisyon bulur
+  // (mümkünse mevcut chip'lerle çakışmasın)
+  function pickPosInRegion(region, skipId) {
+    const anchor = {
+      A:   { cx: 180, cy: 250, rx: 50, ry: 120 },
+      AB:  { cx: 360, cy: 250, rx: 22, ry: 120 },
+      B:   { cx: 540, cy: 250, rx: 50, ry: 120 },
+      out: { cx: 360, cy: 100, rx: 280, ry: 30 },
+    }[region];
+    // Basit: 30 deneme, overlap kontrolü
+    for (let i = 0; i < 30; i++) {
+      const x = anchor.cx + (Math.random() * 2 - 1) * anchor.rx;
+      const y = anchor.cy + (Math.random() * 2 - 1) * anchor.ry;
+      let ok = true;
+      for (const e of ELEMENTS) {
+        if (e === skipId) continue;
+        const p = positions[e];
+        if (!p) continue;
+        if ((p.x - x) ** 2 + (p.y - y) ** 2 < (CHIP_R * 2 + 4) ** 2) { ok = false; break; }
+      }
+      if (ok) return { x, y };
+    }
+    // Fallback: anchor merkezi
+    return { x: anchor.cx, y: anchor.cy };
+  }
+
+  // Chip bırakıldığında başka chip ile binişiyorsa, o chip'i küçük bir ofsetle iteler.
+  function resolveOverlap(draggedId) {
+    const p = positions[draggedId];
+    const minD = CHIP_R * 2 + 4;
+    for (const e of ELEMENTS) {
+      if (e === draggedId) continue;
+      const q = positions[e];
+      const dx = q.x - p.x, dy = q.y - p.y;
+      const d = Math.hypot(dx, dy);
+      if (d < minD) {
+        const push = (minD - d) + 1;
+        const nx = d > 0 ? dx / d : 1;
+        const ny = d > 0 ? dy / d : 0;
+        let newX = q.x + nx * push;
+        let newY = q.y + ny * push;
+        newX = clamp(newX, UNI.x + CHIP_R + 2, UNI.x + UNI.w - CHIP_R - 2);
+        newY = clamp(newY, UNI.y + CHIP_R + 2, UNI.y + UNI.h - CHIP_R - 2);
+        positions[e] = { x: newX, y: newY };
+        assignment[e] = regionAt(newX, newY);
+        applyPosition(e);
+      }
+    }
+  }
+
+  function applyPosition(id) {
+    const p = positions[id];
+    setAttrs(refs.chips[id], { transform: `translate(${p.x} ${p.y})` });
+  }
+
+  // Grid-based preset layout (used by preset/randomize/reset)
+  function gridLayout() {
+    const byR = { A: [], AB: [], B: [], out: [] };
+    ELEMENTS.forEach((e) => byR[assignment[e]].push(e));
+    const spacing = 42;
+    const place = (items, cx, cy, cols) => {
+      const n = items.length;
+      if (n === 0) return;
+      const rows = Math.ceil(n / cols);
+      items.forEach((e, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = cx + (col - (cols - 1) / 2) * spacing;
+        const y = cy + (row - (rows - 1) / 2) * spacing;
+        positions[e] = { x, y };
+        applyPosition(e);
+      });
+    };
+    place(byR.A,   185, 250, 2);
+    place(byR.AB,  360, 250, 1);
+    place(byR.B,   535, 250, 2);
+    place(byR.out, 360,  95, 6);
+  }
+
+  function setA() {
+    return ELEMENTS.filter((e) => assignment[e] === "A" || assignment[e] === "AB");
+  }
+  function setB() {
+    return ELEMENTS.filter((e) => assignment[e] === "B" || assignment[e] === "AB");
+  }
+  function resultSet() {
+    const regs = OPS[currentOp].regions;
+    return ELEMENTS.filter((e) => regs.includes(assignment[e]));
+  }
+  function fmtSet(arr) {
+    if (!arr || arr.length === 0) return "∅";
+    return "{" + arr.sort((x, y) => x - y).join(", ") + "}";
+  }
+
+  function update() {
+    const A_set = setA();
+    const B_set = setB();
+    const res = resultSet();
+
+    // Highlight chips in result; fade others (only if some element exists in any region)
+    const anyAssigned = ELEMENTS.some((e) => assignment[e] !== "out");
+    ELEMENTS.forEach((e) => {
+      const g = refs.chips[e];
+      const inR = res.includes(e);
+      g.classList.toggle("in-result", inR);
+      // Fade only non-result chips, and only if there's *something* to show as result
+      g.classList.toggle("faded", !inR && res.length > 0 && anyAssigned);
+    });
+
+    // Readout
+    $("#venn-set-e").textContent = fmtSet(ELEMENTS);
+    $("#venn-set-a").textContent = fmtSet(A_set);
+    $("#venn-set-b").textContent = fmtSet(B_set);
+    $("#venn-set-result").textContent = fmtSet(res);
+    $("#venn-set-size").textContent = res.length;
+
+    const op = OPS[currentOp];
+    $("#venn-op-v").textContent = op.sym;
+    $("#venn-ops-info").innerHTML = `<b>${op.label}</b> — ${op.desc}`;
+    $("#venn-ops-target").innerHTML =
+      `İşlem: <b>${op.label} = ${fmtSet(res)}</b> · sonuçtaki elementler sarı çerçeveli.`;
+  }
+
+  function reset() {
+    ELEMENTS.forEach((e) => (assignment[e] = "out"));
+    gridLayout();
+    update();
+  }
+  function randomize() {
+    ELEMENTS.forEach((e) => (assignment[e] = REGIONS[randomInt(0, 3)]));
+    gridLayout();
+    update();
+  }
+  function preset() {
+    // 4 in A-only, 3 in A∩B, 3 in B-only, 2 in outside — pedagogically clean
+    const plan = ["A","A","A","A","AB","AB","AB","B","B","B","out","out"];
+    ELEMENTS.forEach((e, i) => (assignment[e] = plan[i]));
+    gridLayout();
+    update();
+  }
+
+  function init() {
+    // Start with the educational preset so the first look is already meaningful
+    ELEMENTS.forEach((e) => (assignment[e] = "out"));
+    buildSVG();
+    preset();
+    $("#venn-op").addEventListener("change", () => {
+      currentOp = $("#venn-op").value;
+      update();
+    });
+    $("#venn-ops-reset").addEventListener("click", reset);
+    $("#venn-ops-random").addEventListener("click", randomize);
+    $("#venn-ops-preset").addEventListener("click", preset);
+  }
+  return { init };
+})();
+
+// ============================================================
+// Module C · Function machine (linear y=ax+b)
 // ============================================================
 const FunctionMod = (() => {
   const canvas = $("#graph");
@@ -743,6 +1551,127 @@ const RefFuncMod = (() => {
     const kStr = c.k === 0 ? "" : c.k > 0 ? ` + ${c.k.toFixed(1)}` : ` − ${Math.abs(c.k).toFixed(1)}`;
     const baseLabel = BASES[c.base].label.replace("x", rStr);
     $("#ref-eq").textContent = `g(x) = ${aStr}${baseLabel}${kStr}`;
+    // Nitel özellikler panelini güncelle
+    updateQualities(c);
+  }
+
+  // Dönüşüm uygulanmış g(x) = a·f(x−r) + k için nitel özellikleri hesapla.
+  // Referans tablo + r,k,a'ya göre dinamik
+  function updateQualities(c) {
+    const { base, a, r, k } = c;
+    const f = BASES[base].f;
+    const fmt = (v) => v === 0 ? "0" : (Math.abs(v - Math.round(v)) < 0.01 ? String(Math.round(v)) : v.toFixed(1));
+    const rStr = r === 0 ? "" : (r > 0 ? ` + ${fmt(r)}` : ` − ${fmt(-r)}`);
+    const kStr = k === 0 ? "" : (k > 0 ? ` + ${fmt(k)}` : ` − ${fmt(-k)}`);
+
+    // Tanım & görüntü, bireysel hesap
+    let domain, range, mono, zero, ext, parity, oneToOne, asym;
+    const aPos = a > 0;
+    const aOne = Math.abs(a) === 1;
+
+    // Ortak: y-kesim f(0)
+    let y0 = NaN;
+    const fAtNegR = f(-r);
+    if (Number.isFinite(fAtNegR)) y0 = a * fAtNegR + k;
+
+    switch (base) {
+      case "lin": {
+        // g(x) = a(x - r) + k = ax + (k - ar) → her zaman bir doğru
+        const intercept = k - a * r;
+        domain = "ℝ";
+        range = a === 0 ? `{${fmt(k)}}` : "ℝ";
+        mono = a === 0 ? "sabit" : (aPos ? "artan (ℝ)" : "azalan (ℝ)");
+        // Sıfır: ax + (k-ar) = 0 → x = (ar - k)/a
+        zero = a === 0 ? (k === 0 ? "her x" : "yok") : `x = ${fmt((a*r - k)/a)}`;
+        ext = "yok";
+        parity = (r === 0 && k === 0) ? "tek" : (k === 0 && r === 0 ? "tek" : "ne tek ne çift");
+        oneToOne = a === 0 ? "hayır (sabit)" : "evet";
+        asym = "yok";
+        break;
+      }
+      case "sq": {
+        // g(x) = a(x-r)² + k
+        domain = "ℝ";
+        range = aPos ? `[${fmt(k)}, ∞)` : `(−∞, ${fmt(k)}]`;
+        mono = aPos
+          ? `(−∞, ${fmt(r)}] azalan · [${fmt(r)}, ∞) artan`
+          : `(−∞, ${fmt(r)}] artan · [${fmt(r)}, ∞) azalan`;
+        // Sıfır: a(x-r)² + k = 0 → (x-r)² = -k/a
+        const disc = -k / a;
+        if (disc < 0) zero = "yok (reel)";
+        else if (disc === 0) zero = `x = ${fmt(r)} (çift kök)`;
+        else {
+          const rootOff = Math.sqrt(disc);
+          zero = `x = ${fmt(r - rootOff)}, ${fmt(r + rootOff)}`;
+        }
+        ext = aPos ? `min (${fmt(r)}, ${fmt(k)})` : `max (${fmt(r)}, ${fmt(k)})`;
+        parity = (r === 0) ? "çift" : "ne tek ne çift";
+        oneToOne = "hayır (çift fonksiyon)";
+        asym = "yok";
+        break;
+      }
+      case "sqrt": {
+        // g(x) = a√(x-r) + k, tanım x ≥ r
+        domain = `[${fmt(r)}, ∞)`;
+        range = aPos ? `[${fmt(k)}, ∞)` : `(−∞, ${fmt(k)}]`;
+        mono = aPos ? `artan [${fmt(r)}, ∞)` : `azalan [${fmt(r)}, ∞)`;
+        // Sıfır: a√(x-r) + k = 0 → √(x-r) = -k/a → x = r + (k/a)²
+        if ((-k / a) < 0) zero = "yok";
+        else {
+          const rv = (-k / a);
+          zero = `x = ${fmt(r + rv * rv)}`;
+        }
+        ext = aPos ? `min f(${fmt(r)}) = ${fmt(k)}` : `max f(${fmt(r)}) = ${fmt(k)}`;
+        parity = "ne tek ne çift";
+        oneToOne = "evet";
+        asym = "yok";
+        break;
+      }
+      case "abs": {
+        // g(x) = a|x-r| + k
+        domain = "ℝ";
+        range = aPos ? `[${fmt(k)}, ∞)` : `(−∞, ${fmt(k)}]`;
+        mono = aPos
+          ? `(−∞, ${fmt(r)}] azalan · [${fmt(r)}, ∞) artan`
+          : `(−∞, ${fmt(r)}] artan · [${fmt(r)}, ∞) azalan`;
+        const disc = -k / a;
+        if (disc < 0) zero = "yok";
+        else if (disc === 0) zero = `x = ${fmt(r)}`;
+        else zero = `x = ${fmt(r - disc)}, ${fmt(r + disc)}`;
+        ext = aPos ? `min (${fmt(r)}, ${fmt(k)})` : `max (${fmt(r)}, ${fmt(k)})`;
+        parity = (r === 0) ? "çift" : "ne tek ne çift";
+        oneToOne = "hayır (çift fonksiyon)";
+        asym = "yok";
+        break;
+      }
+      case "rec": {
+        // g(x) = a/(x-r) + k, tanım x ≠ r
+        domain = `ℝ \\ {${fmt(r)}}`;
+        range = `ℝ \\ {${fmt(k)}}`;
+        mono = aPos
+          ? `(−∞, ${fmt(r)}) azalan · (${fmt(r)}, ∞) azalan`
+          : `(−∞, ${fmt(r)}) artan · (${fmt(r)}, ∞) artan`;
+        // Sıfır: a/(x-r) + k = 0 → x = r - a/k  (k ≠ 0)
+        zero = k === 0 ? "yok" : `x = ${fmt(r - a / k)}`;
+        ext = "yok";
+        parity = (r === 0 && k === 0) ? "tek" : "ne tek ne çift";
+        oneToOne = "evet";
+        asym = `dikey x = ${fmt(r)} · yatay y = ${fmt(k)}`;
+        break;
+      }
+      default:
+        domain = range = mono = zero = ext = parity = oneToOne = asym = "—";
+    }
+
+    $("#rq-dom").textContent = domain;
+    $("#rq-range").textContent = range;
+    $("#rq-mono").textContent = mono;
+    $("#rq-zero").textContent = zero;
+    $("#rq-y0").textContent = Number.isFinite(y0) ? fmt(y0) : "tanımsız";
+    $("#rq-ext").textContent = ext;
+    $("#rq-parity").textContent = parity;
+    $("#rq-11").textContent = oneToOne;
+    $("#rq-asym").textContent = asym;
   }
   // Çift yönlü senkron helperları
   function syncRefFromSlider(sliderId, numId) {
@@ -883,7 +1812,214 @@ const RefFuncMod = (() => {
 })();
 
 // ============================================================
-// Module D · Trigonometry laboratory (full 0-360° · unit circle + sin/cos/tan graphs)
+// Module E · Analytic line laboratory · keşif (puansız)
+// -------------
+// İki sürüklenebilir nokta A ve B; uzaklık, orta nokta, eğim,
+// eğim açısı, doğru denklemi ve belirli oranda bölen nokta P
+// canlı hesaplanır. Puan yok, görev yok — sezgi inşa modülü.
+// ============================================================
+const AnalyticLineMod = (() => {
+  const svg = $("#analytic-svg");
+  const W = 720, H = 500;
+  const padL = 40, padR = 40, padT = 30, padB = 40;
+  const xMin = -10, xMax = 10, yMin = -10, yMax = 10;
+
+  const toPx = (x, y) => ({
+    x: padL + ((x - xMin) / (xMax - xMin)) * (W - padL - padR),
+    y: (H - padB) - ((y - yMin) / (yMax - yMin)) * (H - padT - padB),
+  });
+  const toMath = (px, py) => ({
+    x: Math.round(((px - padL) / (W - padL - padR)) * (xMax - xMin) + xMin),
+    y: Math.round(((H - padB - py) / (H - padT - padB)) * (yMax - yMin) + yMin),
+  });
+
+  const A = { x: -4, y: 2 };
+  const B = { x: 4, y: -2 };
+  const refs = {};
+  let dragging = null;
+
+  function buildSVG() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    // Grid
+    for (let x = xMin; x <= xMax; x++) {
+      const p = toPx(x, 0);
+      svg.appendChild(svgEl("line", {
+        class: x % 5 === 0 ? "grid-major" : "grid-minor",
+        x1: p.x, y1: padT, x2: p.x, y2: H - padB,
+      }));
+    }
+    for (let y = yMin; y <= yMax; y++) {
+      const p = toPx(0, y);
+      svg.appendChild(svgEl("line", {
+        class: y % 5 === 0 ? "grid-major" : "grid-minor",
+        x1: padL, y1: p.y, x2: W - padR, y2: p.y,
+      }));
+    }
+    // Axes
+    const o = toPx(0, 0);
+    svg.appendChild(svgEl("line", { class: "axis", x1: padL, y1: o.y, x2: W - padR, y2: o.y }));
+    svg.appendChild(svgEl("line", { class: "axis", x1: o.x, y1: padT, x2: o.x, y2: H - padB }));
+    // Tick labels
+    [-10, -5, 5, 10].forEach((v) => {
+      const px = toPx(v, 0);
+      const t = svg.appendChild(svgEl("text", {
+        class: "tick-label", x: px.x, y: o.y + 14, "text-anchor": "middle",
+      }));
+      t.textContent = v;
+      const py = toPx(0, v);
+      const t2 = svg.appendChild(svgEl("text", {
+        class: "tick-label", x: o.x + 6, y: py.y + 3,
+      }));
+      t2.textContent = v;
+    });
+
+    // Line AB
+    refs.lineAB = svg.appendChild(svgEl("line", { class: "line-ab" }));
+    // Midpoint marker (small cross)
+    refs.midMark = svg.appendChild(svgEl("circle", {
+      r: 4, fill: "#94a3b8", stroke: "#fff", "stroke-width": 2,
+    }));
+    // Dividing point P
+    refs.pointP = svg.appendChild(svgEl("circle", { class: "point P", r: 9 }));
+    // A and B (draggable)
+    refs.pointA = svg.appendChild(svgEl("circle", { class: "point A", r: 10, "data-k": "A" }));
+    refs.pointB = svg.appendChild(svgEl("circle", { class: "point B", r: 10, "data-k": "B" }));
+    // Labels
+    refs.lblA = svg.appendChild(svgEl("text", { fill: "#4338ca", "font-size": 14, "font-weight": 700 }));
+    refs.lblB = svg.appendChild(svgEl("text", { fill: "#b45309", "font-size": 14, "font-weight": 700 }));
+    refs.lblP = svg.appendChild(svgEl("text", { fill: "#065f46", "font-size": 13, "font-weight": 700 }));
+    refs.lblM = svg.appendChild(svgEl("text", { fill: "#64748b", "font-size": 11 }));
+
+    refs.pointA.addEventListener("pointerdown", onDragStart);
+    refs.pointB.addEventListener("pointerdown", onDragStart);
+  }
+
+  function onDragStart(e) {
+    e.preventDefault();
+    const node = e.currentTarget;
+    node.setPointerCapture?.(e.pointerId);
+    dragging = node.dataset.k;
+    node.addEventListener("pointermove", onDragMove);
+    node.addEventListener("pointerup", onDragEnd);
+    node.addEventListener("pointercancel", onDragEnd);
+  }
+  function onDragMove(e) {
+    if (!dragging) return;
+    const rect = svg.getBoundingClientRect();
+    const ratio = W / rect.width;
+    const px = (e.clientX - rect.left) * ratio;
+    const py = (e.clientY - rect.top) * ratio;
+    const m = toMath(px, py);
+    m.x = clamp(m.x, xMin, xMax);
+    m.y = clamp(m.y, yMin, yMax);
+    if (dragging === "A") { A.x = m.x; A.y = m.y; }
+    if (dragging === "B") { B.x = m.x; B.y = m.y; }
+    render();
+  }
+  function onDragEnd(e) {
+    const node = e.currentTarget;
+    node.removeEventListener("pointermove", onDragMove);
+    node.removeEventListener("pointerup", onDragEnd);
+    node.removeEventListener("pointercancel", onDragEnd);
+    node.releasePointerCapture?.(e.pointerId);
+    dragging = null;
+  }
+
+  function render() {
+    const pA = toPx(A.x, A.y);
+    const pB = toPx(B.x, B.y);
+    setAttrs(refs.lineAB, { x1: pA.x, y1: pA.y, x2: pB.x, y2: pB.y });
+    setAttrs(refs.pointA, { cx: pA.x, cy: pA.y });
+    setAttrs(refs.pointB, { cx: pB.x, cy: pB.y });
+
+    // Doğruya dik normal vektör (SVG uzayında): A→B yönü (dx, dy), dik = (dy, -dx)
+    // Normal ile label'ları noktadan dışarı iteliriz → çakışma riski düşer
+    const dxPx = pB.x - pA.x, dyPx = pB.y - pA.y;
+    const len = Math.hypot(dxPx, dyPx) || 1;
+    const nx = -dyPx / len, ny = dxPx / len; // unit normal
+    // A için negatif, B için pozitif yönde 18 px ofset
+    setAttrs(refs.lblA, { x: pA.x - nx * 20, y: pA.y - ny * 20 + 4, "text-anchor": "middle" });
+    setAttrs(refs.lblB, { x: pB.x + nx * 20, y: pB.y + ny * 20 + 4, "text-anchor": "middle" });
+    refs.lblA.textContent = "A";
+    refs.lblB.textContent = "B";
+
+    // Midpoint
+    const mid = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+    const pMid = toPx(mid.x, mid.y);
+    setAttrs(refs.midMark, { cx: pMid.x, cy: pMid.y });
+    setAttrs(refs.lblM, { x: pMid.x + nx * 14, y: pMid.y + ny * 14 + 4, "text-anchor": "middle" });
+    refs.lblM.textContent = "M";
+
+    // Distance
+    const d = Math.hypot(B.x - A.x, B.y - A.y);
+
+    // Slope + angle
+    const dx = B.x - A.x, dy = B.y - A.y;
+    let slopeStr, angleStr, eqStr;
+    if (Math.abs(dx) < 1e-6) {
+      slopeStr = "tanımsız";
+      angleStr = "90°";
+      eqStr = `x = ${A.x}`;
+    } else {
+      const m = dy / dx;
+      slopeStr = m.toFixed(3);
+      let ang = Math.atan(m) * 180 / Math.PI;
+      if (ang < 0) ang += 180;
+      angleStr = ang.toFixed(1) + "°";
+      const b = A.y - m * A.x;
+      const sign = b >= 0 ? "+" : "−";
+      eqStr = `y = ${m.toFixed(2)}·x ${sign} ${Math.abs(b).toFixed(2)}`;
+    }
+
+    // Dividing point: P = (m·A + k·B) / (k + m), with m = 1 (normalized)
+    // Ratio k: |AP|/|PB|
+    const k = Number($("#an-ratio").value);
+    const P = {
+      x: (A.x + k * B.x) / (1 + k),
+      y: (A.y + k * B.y) / (1 + k),
+    };
+    const pP = toPx(P.x, P.y);
+    setAttrs(refs.pointP, { cx: pP.x, cy: pP.y });
+    // P label'ını doğrunun dik yönünde 18 px ofset — A ve B label'larının karşı tarafında
+    setAttrs(refs.lblP, { x: pP.x + nx * 18, y: pP.y + ny * 18 + 4, "text-anchor": "middle" });
+    refs.lblP.textContent = "P";
+
+    // Readout
+    $("#an-a").textContent = `(${A.x}, ${A.y})`;
+    $("#an-b").textContent = `(${B.x}, ${B.y})`;
+    $("#an-d").textContent = d.toFixed(3);
+    $("#an-mid").textContent = `(${mid.x.toFixed(1)}, ${mid.y.toFixed(1)})`;
+    $("#an-slope").textContent = slopeStr;
+    $("#an-angle").textContent = angleStr;
+    $("#an-eq").textContent = eqStr;
+    $("#an-div").textContent = `(${P.x.toFixed(2)}, ${P.y.toFixed(2)})`;
+  }
+
+  function onRatioSlider() {
+    $("#an-ratio-num").value = Number($("#an-ratio").value).toFixed(1);
+    render();
+  }
+  function onRatioNum() {
+    let v = Number($("#an-ratio-num").value);
+    if (!Number.isFinite(v)) return;
+    v = clamp(v, 0.1, 5);
+    $("#an-ratio").value = v;
+    render();
+  }
+
+  function init() {
+    buildSVG();
+    render();
+    $("#an-ratio").addEventListener("input", onRatioSlider);
+    $("#an-ratio-num").addEventListener("input", onRatioNum);
+    $("#an-ratio-num").addEventListener("blur", onRatioNum);
+  }
+  return { init };
+})();
+
+// ============================================================
+// Module F · Trigonometry laboratory (full 0-360° · unit circle + sin/cos/tan graphs)
 // ============================================================
 const TrigMod = (() => {
   const svg = $("#trig-svg");
@@ -1439,9 +2575,14 @@ const TriangleMod = (() => {
   }
 
   function reset() {
-    verts.A = { x: 360, y: 90 };
-    verts.B = { x: 200, y: 320 };
-    verts.C = { x: 520, y: 320 };
+    // Gerçek eşkenar üçgen · taban BC, A üstte dengede.
+    // Yükseklik = kenar·√3/2
+    const baseY = 340;
+    const half = 150;            // yarı taban
+    const height = half * Math.sqrt(3); // tüm kenar = 2*half; yükseklik = 2·half·√3/2
+    verts.A = { x: 360, y: baseY - height };   // ≈ (360, 80.2)
+    verts.B = { x: 360 - half, y: baseY };     // (210, 340)
+    verts.C = { x: 360 + half, y: baseY };     // (510, 340)
     render();
   }
   function rand() {
@@ -1460,110 +2601,984 @@ const TriangleMod = (() => {
 })();
 
 // ============================================================
-// Module F · Probability lab
+// Triangle geometry helpers (G2 + G3 ortak)
+// B = (0,0), C = (a, 0) standart yerleşimi kullanıyoruz (a = |BC|).
+// Tüm inşa fonksiyonları bir {A, B, C} obj döner veya geçersiz/parametre
+// hatasında null.
 // ============================================================
-const ProbMod = (() => {
-  const bars = $("#prob-bars");
-  const conv = $("#prob-conv");
-  let series = [];
+const TriGeo = (() => {
+  const D2R = Math.PI / 180;
 
-  function drawBars(theo, exp) {
-    const W = 280, H = 220, pad = 30;
-    const barW = 70, gap = 40;
-    const baseY = H - pad;
-    const maxH = H - pad * 2;
-    const theoH = theo * maxH;
-    const expH  = exp  * maxH;
-    const theoX = (W - (2 * barW + gap)) / 2;
-    const expX  = theoX + barW + gap;
-    bars.innerHTML = `
-      <line x1="${pad}" y1="${baseY}" x2="${W - pad}" y2="${baseY}" stroke="#cbd5e1" />
-      <rect class="bar theo" x="${theoX}" y="${baseY - theoH}" width="${barW}" height="${theoH}" rx="6" />
-      <rect class="bar exp"  x="${expX}"  y="${baseY - expH}"  width="${barW}" height="${expH}"  rx="6" />
-      <text x="${theoX + barW/2}" y="${baseY + 14}" text-anchor="middle">Teorik</text>
-      <text x="${expX  + barW/2}" y="${baseY + 14}" text-anchor="middle">Deneysel</text>
-      <text x="${theoX + barW/2}" y="${baseY - theoH - 6}" text-anchor="middle" fill="#b45309" font-weight="700">${theo.toFixed(2)}</text>
-      <text x="${expX  + barW/2}" y="${baseY - expH  - 6}" text-anchor="middle" fill="#4338ca" font-weight="700">${exp.toFixed(2)}</text>
-    `;
+  // KKK (SSS): 3 kenar → tek üçgen (üçgen eşitsizliği sağlanıyorsa)
+  function KKK(a, b, c) {
+    if (a + b <= c || a + c <= b || b + c <= a) return null;
+    // cos B = (a² + c² − b²) / (2ac)
+    const cosB = (a * a + c * c - b * b) / (2 * a * c);
+    if (Math.abs(cosB) > 1) return null;
+    const B = Math.acos(cosB);
+    return { A: { x: c * Math.cos(B), y: c * Math.sin(B) }, B: { x: 0, y: 0 }, C: { x: a, y: 0 } };
   }
-  function drawConvergence(p) {
-    const W = 280, H = 220, pad = 28;
-    if (series.length < 2) {
-      conv.innerHTML = `
-        <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" class="axis" />
-        <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}" class="axis" />
-        <text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#94a3b8">Deneyi çalıştır…</text>
-      `;
+  // KAK (SAS): c, açı B, a
+  function KAK(c, Bdeg, a) {
+    const B = Bdeg * D2R;
+    return { A: { x: c * Math.cos(B), y: c * Math.sin(B) }, B: { x: 0, y: 0 }, C: { x: a, y: 0 } };
+  }
+  // AKA (ASA): açı B, a, açı C
+  function AKA(Bdeg, a, Cdeg) {
+    if (Bdeg + Cdeg >= 180 || Bdeg <= 0 || Cdeg <= 0) return null;
+    const Adeg = 180 - Bdeg - Cdeg;
+    // Sinüs teoremi: c = a · sin C / sin A  (c = |AB|)
+    const c = a * Math.sin(Cdeg * D2R) / Math.sin(Adeg * D2R);
+    return KAK(c, Bdeg, a);
+  }
+  // KAA (AAS): açı B, açı C, b (= |AC|, yani B'nin karşısı olmayan bitişik olmayan kenar)
+  function KAA(Bdeg, Cdeg, b) {
+    if (Bdeg + Cdeg >= 180 || Bdeg <= 0 || Cdeg <= 0) return null;
+    const Adeg = 180 - Bdeg - Cdeg;
+    // a / sin A = b / sin B  →  a = b · sin A / sin B
+    const a = b * Math.sin(Adeg * D2R) / Math.sin(Bdeg * D2R);
+    return AKA(Bdeg, a, Cdeg);
+  }
+  // KKA (SSA) · ambigü: a, b, açı B; döndürülen obj.alt varsa ikinci çözüm
+  function KKA(a, b, Bdeg) {
+    const B = Bdeg * D2R;
+    const sinB = Math.sin(B);
+    const sinA = a * sinB / b;
+    if (sinA > 1 + 1e-9) return null;            // hiç çözüm yok
+    const clampedSinA = Math.min(1, Math.max(-1, sinA));
+    const Aa = Math.asin(clampedSinA);            // dar açı çözüm
+    const Ao = Math.PI - Aa;                      // geniş açı çözüm
+    const build = (Aangle) => {
+      const Cangle = Math.PI - B - Aangle;
+      if (Cangle <= 0) return null;
+      const c = b * Math.sin(Cangle) / sinB;
+      return { A: { x: c * Math.cos(B), y: c * Math.sin(B) }, B: { x: 0, y: 0 }, C: { x: a, y: 0 } };
+    };
+    const primary = build(Aa);
+    const alt = (Aa !== Ao && Math.PI - B - Ao > 0) ? build(Ao) : null;
+    if (!primary) return null;
+    return { ...primary, alt };
+  }
+  // HK (RHS/HL): dik üçgen — hipotenüs h, bir kenar a (dik açı C'de)
+  function HK(h, a) {
+    if (h <= a) return null;
+    const other = Math.sqrt(h * h - a * a);
+    return { A: { x: a, y: other }, B: { x: 0, y: 0 }, C: { x: a, y: 0 } };
+  }
+
+  // Ölçüm okuma: bir üçgen {A, B, C} için
+  function measure(t) {
+    if (!t) return null;
+    const AB = Math.hypot(t.B.x - t.A.x, t.B.y - t.A.y);
+    const BC = Math.hypot(t.C.x - t.B.x, t.C.y - t.B.y);
+    const CA = Math.hypot(t.A.x - t.C.x, t.A.y - t.C.y);
+    // Açılar
+    const angle = (P, Q, R) => {
+      const v1x = Q.x - P.x, v1y = Q.y - P.y;
+      const v2x = R.x - P.x, v2y = R.y - P.y;
+      const dot = v1x * v2x + v1y * v2y;
+      const m = Math.hypot(v1x, v1y) * Math.hypot(v2x, v2y);
+      return Math.acos(Math.max(-1, Math.min(1, dot / m))) * 180 / Math.PI;
+    };
+    return {
+      a: BC, b: CA, c: AB,
+      A: angle(t.A, t.B, t.C),
+      B: angle(t.B, t.A, t.C),
+      C: angle(t.C, t.A, t.B),
+    };
+  }
+
+  // Üçgeni verilen dikdörtgen viewport'un ortasına sığacak şekilde dönüştür.
+  // externalScale verilirse sığdırma hesabı atlanır ve o ölçek kullanılır —
+  // benzerlik/karşılaştırma modüllerinde iki üçgenin paylaşılan ölçeği için.
+  function fitToPort(t, port, paddingPct = 0.12, externalScale = null) {
+    if (!t) return null;
+    const xs = [t.A.x, t.B.x, t.C.x];
+    const ys = [t.A.y, t.B.y, t.C.y];
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const w = maxX - minX || 1, h = maxY - minY || 1;
+    let scale;
+    if (externalScale !== null && Number.isFinite(externalScale) && externalScale > 0) {
+      scale = externalScale;
+    } else {
+      const availW = port.w * (1 - 2 * paddingPct);
+      const availH = port.h * (1 - 2 * paddingPct);
+      scale = Math.min(availW / w, availH / h);
+    }
+    const cx = port.x + port.w / 2;
+    const cy = port.y + port.h / 2;
+    const midX = (minX + maxX) / 2;
+    const midY = (minY + maxY) / 2;
+    // SVG y ters: matematik y+ → svg y- (flipY)
+    const xf = (p) => ({ x: cx + (p.x - midX) * scale, y: cy - (p.y - midY) * scale });
+    return { A: xf(t.A), B: xf(t.B), C: xf(t.C), scale };
+  }
+
+  // İki üçgenin (örn. T₁ ve T₂ = k·T₁) aynı ölçekte çizilebilmesi için
+  // paylaşılan ölçek hesaplar. Her ikisinin de kendi port'una sığmasını
+  // garanti eder (büyük olanın sığması esas alınır).
+  function computeSharedScale(t1, t2, port, paddingPct = 0.12) {
+    const bbox = (t) => {
+      if (!t) return { w: 1, h: 1 };
+      const xs = [t.A.x, t.B.x, t.C.x];
+      const ys = [t.A.y, t.B.y, t.C.y];
+      return {
+        w: Math.max(...xs) - Math.min(...xs) || 1,
+        h: Math.max(...ys) - Math.min(...ys) || 1,
+      };
+    };
+    const b1 = bbox(t1), b2 = bbox(t2);
+    const maxW = Math.max(b1.w, b2.w);
+    const maxH = Math.max(b1.h, b2.h);
+    const availW = port.w * (1 - 2 * paddingPct);
+    const availH = port.h * (1 - 2 * paddingPct);
+    return Math.min(availW / maxW, availH / maxH);
+  }
+
+  // Vertex ve karşı kenar renk paleti — Oliver Byrne (Euclid) tarzı:
+  // renk fonksiyonel iz, eşleşen parçaları bağlar. A-a kırmızı, B-b mor, C-c yeşil.
+  const COLOR = {
+    A: "#ef4444", B: "#6366f1", C: "#10b981",
+    // Kenar = karşı köşenin rengi
+    a: "#ef4444", b: "#6366f1", c: "#10b981",
+  };
+
+  // Zengin üçgen çizimi — hem G2 hem G3'te kullanılır.
+  //   container: parent SVG <g>
+  //   t: matematik koordinatlarında { A, B, C } (y+ up)
+  //   port: { x, y, w, h }
+  //   externalScale: opsiyonel · iki üçgeni paylaşılan ölçekte çizmek için
+  function drawRichTriangle(container, t, port, externalScale = null) {
+    while (container.firstChild) container.removeChild(container.firstChild);
+    if (!t) {
+      const err = container.appendChild(svgEl("text", {
+        x: port.x + port.w / 2, y: port.y + port.h / 2,
+        "text-anchor": "middle", fill: "#b91c1c", "font-weight": 700, "font-size": 14,
+      }));
+      err.textContent = "⚠ Geçersiz parametreler";
       return;
     }
-    const n = series.length;
-    const xAt = (i) => pad + (i / (n - 1)) * (W - 2 * pad);
-    const yAt = (v) => (H - pad) - v * (H - 2 * pad);
-    const path = series.map((v, i) => `${i === 0 ? "M" : "L"} ${xAt(i).toFixed(1)} ${yAt(v).toFixed(1)}`).join(" ");
-    const targetY = yAt(p);
-    conv.innerHTML = `
-      <line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" class="axis" />
-      <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}" class="axis" />
-      <line x1="${pad}" y1="${targetY}" x2="${W-pad}" y2="${targetY}" class="target-line" />
-      <path class="conv-line" d="${path}" />
-      <text x="${W-pad}" y="${targetY-4}" text-anchor="end" fill="#b45309" font-weight="700">p = ${p.toFixed(2)}</text>
-    `;
+    const fit = fitToPort(t, port, 0.12, externalScale);
+    const m = measure(t);
+    if (!fit || !m) return;
+
+    // 1) Üçgen dolum (hafif)
+    const pts = `${fit.A.x},${fit.A.y} ${fit.B.x},${fit.B.y} ${fit.C.x},${fit.C.y}`;
+    container.appendChild(svgEl("polygon", {
+      points: pts, fill: "rgba(15,23,42,0.035)", stroke: "none",
+    }));
+
+    // 2) Renkli kenarlar (karşı köşenin rengi) + tick marks
+    const drawEdge = (P, Q, color, labelText, tickCount) => {
+      container.appendChild(svgEl("line", {
+        x1: P.x, y1: P.y, x2: Q.x, y2: Q.y,
+        stroke: color, "stroke-width": 3.2, "stroke-linecap": "round",
+      }));
+      const mx = (P.x + Q.x) / 2, my = (P.y + Q.y) / 2;
+      const dx = Q.x - P.x, dy = Q.y - P.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len, ny = dx / len;
+      const ux = dx / len,   uy = dy / len;
+      // Tick marks — 1 tick = kenar 'a', 2 = 'b', 3 = 'c'
+      const tickLen = 6, gap = 4;
+      for (let i = 0; i < tickCount; i++) {
+        const off = (i - (tickCount - 1) / 2) * gap;
+        const cx = mx + ux * off, cy = my + uy * off;
+        container.appendChild(svgEl("line", {
+          x1: cx - nx * tickLen / 2, y1: cy - ny * tickLen / 2,
+          x2: cx + nx * tickLen / 2, y2: cy + ny * tickLen / 2,
+          stroke: color, "stroke-width": 2.6, "stroke-linecap": "round",
+        }));
+      }
+      // Kenar etiketi (capsule)
+      const lblX = mx + nx * 16;
+      const lblY = my + ny * 16;
+      const rectW = Math.max(34, labelText.length * 8 + 10);
+      container.appendChild(svgEl("rect", {
+        x: lblX - rectW / 2, y: lblY - 9, width: rectW, height: 18, rx: 9,
+        fill: "#fff", stroke: color, "stroke-width": 1.3,
+        filter: "drop-shadow(0 1px 2px rgba(15,23,42,0.08))",
+      }));
+      container.appendChild(svgEl("text", {
+        x: lblX, y: lblY + 4, "text-anchor": "middle", "font-size": 11.5,
+        "font-weight": 700, fill: color, "font-family": "JetBrains Mono, monospace",
+      })).textContent = labelText;
+    };
+    drawEdge(fit.B, fit.C, COLOR.a, `a=${m.a.toFixed(1)}`, 1);
+    drawEdge(fit.C, fit.A, COLOR.b, `b=${m.b.toFixed(1)}`, 2);
+    drawEdge(fit.A, fit.B, COLOR.c, `c=${m.c.toFixed(1)}`, 3);
+
+    // 3) Açı yayları + derece etiketleri (her köşede)
+    const drawAngleMark = (vertex, adj1, adj2, degValue, color) => {
+      const a1 = Math.atan2(adj1.y - vertex.y, adj1.x - vertex.x);
+      const a2 = Math.atan2(adj2.y - vertex.y, adj2.x - vertex.x);
+      let delta = a2 - a1;
+      while (delta > Math.PI) delta -= 2 * Math.PI;
+      while (delta < -Math.PI) delta += 2 * Math.PI;
+      const sweep = delta > 0 ? 1 : 0;
+      const radius = 26;
+      const x1 = vertex.x + radius * Math.cos(a1);
+      const y1 = vertex.y + radius * Math.sin(a1);
+      const x2 = vertex.x + radius * Math.cos(a2);
+      const y2 = vertex.y + radius * Math.sin(a2);
+      container.appendChild(svgEl("path", {
+        d: `M ${vertex.x} ${vertex.y} L ${x1} ${y1} A ${radius} ${radius} 0 0 ${sweep} ${x2} ${y2} Z`,
+        fill: color, "fill-opacity": 0.18,
+        stroke: color, "stroke-width": 1.5, "stroke-opacity": 0.7,
+      }));
+      // Açı değeri · bisector yönünde dışarı
+      const midAngle = a1 + delta / 2;
+      const lblX = vertex.x + (radius + 14) * Math.cos(midAngle);
+      const lblY = vertex.y + (radius + 14) * Math.sin(midAngle) + 4;
+      container.appendChild(svgEl("text", {
+        x: lblX, y: lblY, "text-anchor": "middle", "font-size": 11,
+        "font-weight": 700, fill: color, "font-family": "JetBrains Mono, monospace",
+      })).textContent = `${degValue.toFixed(1)}°`;
+    };
+    drawAngleMark(fit.A, fit.B, fit.C, m.A, COLOR.A);
+    drawAngleMark(fit.B, fit.C, fit.A, m.B, COLOR.B);
+    drawAngleMark(fit.C, fit.A, fit.B, m.C, COLOR.C);
+
+    // 4) Köşe noktaları: halo + iç disk + beyaz harf
+    const drawVertexDot = (p, letter, color) => {
+      container.appendChild(svgEl("circle", {
+        cx: p.x, cy: p.y, r: 16, fill: color, "fill-opacity": 0.16,
+      }));
+      container.appendChild(svgEl("circle", {
+        cx: p.x, cy: p.y, r: 11, fill: color,
+        stroke: "#fff", "stroke-width": 2.5,
+      }));
+      container.appendChild(svgEl("text", {
+        x: p.x, y: p.y + 4, "text-anchor": "middle",
+        fill: "#fff", "font-weight": 800, "font-size": 13,
+        "font-family": "Inter, sans-serif",
+      })).textContent = letter;
+    };
+    drawVertexDot(fit.A, "A", COLOR.A);
+    drawVertexDot(fit.B, "B", COLOR.B);
+    drawVertexDot(fit.C, "C", COLOR.C);
   }
-  function simulate() {
-    const p = Number($("#p-slider").value);
-    const trials = clamp(Number($("#trial-count").value) || 500, 20, 5000);
-    series = [];
-    let success = 0;
-    const checkpoints = clamp(Math.floor(trials / 20), 20, 60);
-    const step = Math.max(1, Math.floor(trials / checkpoints));
-    for (let i = 1; i <= trials; i++) {
-      if (Math.random() < p) success++;
-      if (i % step === 0 || i === trials) series.push(success / i);
+
+  return { KKK, KAK, AKA, KAA, KKA, HK, measure, fitToPort, computeSharedScale, drawRichTriangle, COLOR };
+})();
+
+// ============================================================
+// Module G2 · Triangle congruence studio
+// -------------
+// Kriter seçici (KKK, KAK, AKA, KAA, KKA, HK) + iki üçgen yan yana.
+// T₁ ve T₂ aynı kriterden inşa edilir; KKA'da "Alternatif üçgen" butonu
+// ile ambigü ikinci çözüme geçilir (eşlik bozulur → kırmızı badge).
+// ============================================================
+const TriCongruenceMod = (() => {
+  const svg = $("#cong-svg");
+  const W = 720, H = 440;
+  const PAD = 12;
+  const portW = (W - 3 * PAD) / 2;
+  const port1 = { x: PAD, y: PAD + 20, w: portW, h: H - 2 * PAD - 30 };
+  const port2 = { x: 2 * PAD + portW, y: PAD + 20, w: portW, h: H - 2 * PAD - 30 };
+
+  // Kriter tanımları: her biri input spec + build fonksiyonu
+  const CRITERIA = {
+    kkk: {
+      label: "KKK", info: "Üç kenarı eşit olan üçgenler eşittir (Kenar-Kenar-Kenar).",
+      inputs: [
+        { name: "a", label: "|BC| = a", min: 3, max: 8, step: 0.1, def: 5 },
+        { name: "b", label: "|AC| = b", min: 3, max: 8, step: 0.1, def: 6 },
+        { name: "c", label: "|AB| = c", min: 3, max: 8, step: 0.1, def: 7 },
+      ],
+      build: (v) => TriGeo.KKK(v.a, v.b, v.c),
+      unique: true,
+    },
+    kak: {
+      label: "KAK", info: "İki kenar ve aralarındaki açı eşit olan üçgenler eşittir.",
+      inputs: [
+        { name: "c", label: "|AB| = c", min: 3, max: 8, step: 0.1, def: 5 },
+        { name: "B", label: "∠B (derece)", min: 30, max: 150, step: 1, def: 60 },
+        { name: "a", label: "|BC| = a", min: 3, max: 8, step: 0.1, def: 6 },
+      ],
+      build: (v) => TriGeo.KAK(v.c, v.B, v.a),
+      unique: true,
+    },
+    aka: {
+      label: "AKA", info: "İki açı ve aralarındaki kenar eşit olan üçgenler eşittir.",
+      inputs: [
+        { name: "B", label: "∠B (derece)", min: 20, max: 100, step: 1, def: 50 },
+        { name: "a", label: "|BC| = a", min: 3, max: 8, step: 0.1, def: 6 },
+        { name: "C", label: "∠C (derece)", min: 20, max: 100, step: 1, def: 60 },
+      ],
+      build: (v) => TriGeo.AKA(v.B, v.a, v.C),
+      unique: true,
+    },
+    kaa: {
+      label: "KAA", info: "İki açı + bitişik olmayan kenar eşit → eşlik.",
+      inputs: [
+        { name: "B", label: "∠B (derece)", min: 20, max: 100, step: 1, def: 50 },
+        { name: "C", label: "∠C (derece)", min: 20, max: 100, step: 1, def: 60 },
+        { name: "b", label: "|AC| = b", min: 3, max: 8, step: 0.1, def: 5 },
+      ],
+      build: (v) => TriGeo.KAA(v.B, v.C, v.b),
+      unique: true,
+    },
+    kka: {
+      label: "KKA", info: "⚠ İki kenar + karşı açı: genellikle iki farklı üçgen olur — eşlik GARANTİ değildir.",
+      inputs: [
+        { name: "a", label: "|BC| = a", min: 3, max: 7, step: 0.1, def: 5 },
+        { name: "b", label: "|AC| = b", min: 4, max: 8, step: 0.1, def: 6.5 },
+        { name: "B", label: "∠B (derece)", min: 25, max: 70, step: 1, def: 40 },
+      ],
+      build: (v) => TriGeo.KKA(v.a, v.b, v.B),
+      unique: false,
+    },
+    hk: {
+      label: "HK", info: "Dik üçgende hipotenüs + bir kenar eşit → eşlik.",
+      inputs: [
+        { name: "h", label: "hipotenüs", min: 5, max: 10, step: 0.1, def: 7 },
+        { name: "a", label: "|BC| = a", min: 3, max: 9, step: 0.1, def: 5 },
+      ],
+      build: (v) => TriGeo.HK(v.h, v.a),
+      unique: true,
+    },
+  };
+
+  let curKey = "kkk";
+  let values = {};
+  let useAlt = false;         // KKA için alternatif çözüme geç
+  let overlayOn = false;      // T₂ → T₁ üzerine animasyonla kayıyor mu
+  let animT = 0;              // 0 = port2'de, 1 = port1'in üstünde
+  let rafId = null;
+  const refs = {};
+
+  function buildSVGShell() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    svg.appendChild(svgEl("rect", { class: "port-bg port-t1", x: port1.x, y: port1.y, width: port1.w, height: port1.h, rx: 12 }));
+    refs.port2bg = svg.appendChild(svgEl("rect", { class: "port-bg port-t2", x: port2.x, y: port2.y, width: port2.w, height: port2.h, rx: 12 }));
+    const t1 = svg.appendChild(svgEl("text", { class: "port-title port-t1-title", x: port1.x + 18, y: port1.y - 6 })); t1.textContent = "T₁";
+    refs.port2title = svg.appendChild(svgEl("text", { class: "port-title port-t2-title", x: port2.x + 18, y: port2.y - 6 })); refs.port2title.textContent = "T₂";
+    refs.g1 = svg.appendChild(svgEl("g", {}));
+    refs.g2 = svg.appendChild(svgEl("g", {}));
+  }
+
+  function renderInputs() {
+    const host = $("#cong-inputs");
+    host.innerHTML = "";
+    const c = CRITERIA[curKey];
+    c.inputs.forEach((inp) => {
+      if (values[inp.name] === undefined) values[inp.name] = inp.def;
+      const row = document.createElement("div");
+      row.className = "field";
+      row.innerHTML = `
+        <span class="lbl">${inp.label}</span>
+        <input id="cong-in-${inp.name}" type="range" min="${inp.min}" max="${inp.max}" step="${inp.step}" value="${values[inp.name]}" />
+        <input class="val-input" id="cong-in-${inp.name}-num" type="number" step="${inp.step}" min="${inp.min}" max="${inp.max}" value="${values[inp.name]}" />
+      `;
+      host.appendChild(row);
+      const slider = row.querySelector("input[type=range]");
+      const num = row.querySelector("input[type=number]");
+      const onChange = (src) => () => {
+        let v = Number(src.value);
+        if (!Number.isFinite(v)) return;
+        v = clamp(v, inp.min, inp.max);
+        values[inp.name] = v;
+        slider.value = v;
+        if (document.activeElement !== num) num.value = (inp.step < 1 ? v.toFixed(1) : v);
+        update();
+      };
+      slider.addEventListener("input", onChange(slider));
+      num.addEventListener("input", onChange(num));
+      num.addEventListener("blur", onChange(num));
+    });
+  }
+
+  function buildTable(m1, m2) {
+    const host = $("#cong-table");
+    host.innerHTML = `<div class="cmp-row header"><span>Ölçü</span><span>T₁</span><span>T₂</span><span>eşit?</span></div>`;
+    const rows = [
+      { k: "|BC| = a", v1: m1?.a, v2: m2?.a, unit: "" },
+      { k: "|AC| = b", v1: m1?.b, v2: m2?.b, unit: "" },
+      { k: "|AB| = c", v1: m1?.c, v2: m2?.c, unit: "" },
+      { k: "∠A", v1: m1?.A, v2: m2?.A, unit: "°" },
+      { k: "∠B", v1: m1?.B, v2: m2?.B, unit: "°" },
+      { k: "∠C", v1: m1?.C, v2: m2?.C, unit: "°" },
+    ];
+    rows.forEach((r) => {
+      const eq = (r.v1 != null && r.v2 != null && Math.abs(r.v1 - r.v2) < 0.05);
+      const row = document.createElement("div");
+      row.className = "cmp-row";
+      row.innerHTML = `
+        <span>${r.k}</span>
+        <span>${r.v1 == null ? "—" : r.v1.toFixed(2) + r.unit}</span>
+        <span>${r.v2 == null ? "—" : r.v2.toFixed(2) + r.unit}</span>
+        <span class="${eq ? "check-ok" : "check-warn"}">${eq ? "✓" : "✗"}</span>`;
+      host.appendChild(row);
+    });
+  }
+
+  function update() {
+    const c = CRITERIA[curKey];
+    $("#cong-crit-v").textContent = c.label;
+    $("#cong-info").innerHTML = `<b>${c.label}</b>: ${c.info}`;
+
+    const t1 = c.build(values);
+    let t2 = c.build(values);
+    // KKA: eğer alt seçiliyse ikinci olası çözüme geç
+    if (curKey === "kka" && useAlt && t1 && t1.alt) t2 = t1.alt;
+    else if (curKey === "kka" && t2 && t2.alt && !useAlt) t2 = { A: t2.A, B: t2.B, C: t2.C };
+
+    // Paylaşılan ölçek: hem eşlik durumunda tam çakışma, hem KKA'da farkın görsel
+    // olarak kıyaslanabilir olması için iki üçgeni aynı piksel-başına-birimle çiz.
+    const t1Clean = t1 ? { A: t1.A, B: t1.B, C: t1.C } : null;
+    const t2Clean = t2 ? { A: t2.A, B: t2.B, C: t2.C } : null;
+    const sharedScale = (t1Clean && t2Clean) ? TriGeo.computeSharedScale(t1Clean, t2Clean, port1) : null;
+
+    // Overlay animasyonu: T₂ port2'den port1'e doğru kayar (animT: 0 → 1)
+    const t2Port = {
+      x: port2.x + (port1.x - port2.x) * animT,
+      y: port2.y + (port1.y - port2.y) * animT,
+      w: port2.w,
+      h: port2.h,
+    };
+
+    // port2 arka planını overlay'de soluklaştır
+    refs.port2bg.setAttribute("fill-opacity", 1 - animT * 0.85);
+    refs.port2title.setAttribute("opacity", 1 - animT * 0.85);
+
+    TriGeo.drawRichTriangle(refs.g1, t1Clean, port1, sharedScale);
+    TriGeo.drawRichTriangle(refs.g2, t2Clean, t2Port, sharedScale);
+    // Overlay durumunda T₂ grubunu hafif saydamlaştır — T₁ altta görünür kalsın
+    refs.g2.setAttribute("opacity", 1 - animT * 0.35);
+
+    const m1 = TriGeo.measure(t1 ? { A: t1.A, B: t1.B, C: t1.C } : null);
+    const m2 = TriGeo.measure(t2 ? { A: t2.A, B: t2.B, C: t2.C } : null);
+    buildTable(m1, m2);
+
+    const v = $("#cong-verdict");
+    const altBtn = $("#cong-alt");
+    altBtn.style.display = (curKey === "kka" && t1 && t1.alt) ? "" : "none";
+    altBtn.textContent = useAlt ? "Birincil çözüme dön" : "Alternatif üçgen (KKA)";
+
+    if (!t1 || !t2) {
+      v.className = "verdict verdict-warn";
+      v.textContent = "Geçersiz parametreler";
+      return;
     }
-    const exp = success / trials;
-    const diff = Math.abs(exp - p);
-    drawBars(p, exp);
-    drawConvergence(p);
-    State.byModule.prob.run = (State.byModule.prob.run || 0) + 1;
-    State.byModule.prob.lastDiff = diff;
-    const fb = $("#prob-fb");
-    let earned = 0;
-    if (diff <= 0.03) { earned = 12; fb.textContent = `Mükemmel · |fark|=${diff.toFixed(3)} · +${earned}`; fb.className = "feedback ok"; }
-    else if (diff <= 0.06) { earned = 6; fb.textContent = `Güzel · |fark|=${diff.toFixed(3)} · +${earned}`; fb.className = "feedback ok"; }
-    else { earned = 0; fb.textContent = `|fark|=${diff.toFixed(3)} büyük. Deneme sayısını artır.`; fb.className = "feedback warn"; }
-    if (earned > 0) {
-      State.byModule.prob.pts = (State.byModule.prob.pts || 0) + earned;
-      toast(`Yakınsama ${diff.toFixed(3)} · +${earned}`, "ok");
-      recordAttempt("prob", true, earned);
+    const allEqual = m1 && m2 &&
+      Math.abs(m1.a - m2.a) < 0.05 &&
+      Math.abs(m1.b - m2.b) < 0.05 &&
+      Math.abs(m1.c - m2.c) < 0.05;
+    if (allEqual) {
+      v.className = "verdict verdict-ok";
+      v.textContent = "T₁ ≅ T₂ · eşlik sağlanıyor";
     } else {
-      recordAttempt("prob", false);
+      v.className = "verdict verdict-warn";
+      v.textContent = "T₁ ≇ T₂ · farklı üçgenler (KKA ambigüitesi)";
     }
-    renderModuleMini("prob");
+  }
+
+  function onCritChange() {
+    curKey = $("#cong-criterion").value;
+    values = {};
+    useAlt = false;
+    overlayOn = false;
+    animT = 0;
+    updateOverlayBtn();
+    renderInputs();
+    update();
+  }
+
+  function resetValues() {
+    values = {};
+    useAlt = false;
+    overlayOn = false;
+    animT = 0;
+    updateOverlayBtn();
+    renderInputs();
+    update();
+  }
+
+  // Overlay animasyonu — requestAnimationFrame ile smooth ease-out cubic
+  function animateOverlay(targetOn) {
+    if (rafId) cancelAnimationFrame(rafId);
+    const start = performance.now();
+    const from = animT;
+    const to = targetOn ? 1 : 0;
+    const duration = 600;
+    const ease = (p) => 1 - Math.pow(1 - p, 3);
+    const step = (now) => {
+      const elapsed = now - start;
+      const progress = Math.min(1, elapsed / duration);
+      animT = from + (to - from) * ease(progress);
+      update();
+      if (progress < 1) rafId = requestAnimationFrame(step);
+      else rafId = null;
+    };
+    rafId = requestAnimationFrame(step);
+  }
+  function updateOverlayBtn() {
+    const btn = $("#cong-overlay");
+    btn.textContent = overlayOn ? "⇔ Ayır" : "⇔ Üst üste bindir";
+    btn.classList.toggle("primary", !overlayOn);
+    btn.classList.toggle("ghost", overlayOn);
+  }
+
+  function init() {
+    buildSVGShell();
+    renderInputs();
+    $("#cong-criterion").addEventListener("change", onCritChange);
+    $("#cong-alt").addEventListener("click", () => { useAlt = !useAlt; update(); });
+    $("#cong-reset").addEventListener("click", resetValues);
+    $("#cong-overlay").addEventListener("click", () => {
+      overlayOn = !overlayOn;
+      updateOverlayBtn();
+      animateOverlay(overlayOn);
+    });
+    update();
+  }
+  return { init };
+})();
+
+// ============================================================
+// Module G3 · Triangle similarity studio
+// -------------
+// Kriter: AA (iki açı eşit), KKK-oran, KAK-oran
+// T₁ kullanıcının parametreleriyle kurulur; T₂ = T₁ × k (ölçek)
+// Açılar eşit, kenarlar k oranında olur → benzerlik.
+// ============================================================
+const TriSimilarityMod = (() => {
+  const svg = $("#sim-svg");
+  const W = 720, H = 440;
+  const PAD = 12;
+  const portW = (W - 3 * PAD) / 2;
+  const port1 = { x: PAD, y: PAD + 20, w: portW, h: H - 2 * PAD - 30 };
+  const port2 = { x: 2 * PAD + portW, y: PAD + 20, w: portW, h: H - 2 * PAD - 30 };
+
+  const CRITERIA = {
+    aa: {
+      label: "AA", info: "İki açı eşit olan üçgenler benzerdir (üçüncü açı otomatik eşit).",
+      inputs: [
+        { name: "B", label: "∠B", min: 20, max: 100, step: 1, def: 50 },
+        { name: "C", label: "∠C", min: 20, max: 100, step: 1, def: 60 },
+        { name: "a", label: "|BC| (T₁)", min: 3, max: 8, step: 0.1, def: 5 },
+      ],
+      build: (v) => TriGeo.AKA(v.B, v.a, v.C),
+    },
+    kkk: {
+      label: "KKK-oran", info: "Üç kenarın oranları eşit → üçgenler benzer.",
+      inputs: [
+        { name: "a", label: "|BC| = a", min: 3, max: 7, step: 0.1, def: 4 },
+        { name: "b", label: "|AC| = b", min: 3, max: 8, step: 0.1, def: 5 },
+        { name: "c", label: "|AB| = c", min: 3, max: 8, step: 0.1, def: 6 },
+      ],
+      build: (v) => TriGeo.KKK(v.a, v.b, v.c),
+    },
+    kak: {
+      label: "KAK-oran", info: "İki kenar oranı eşit + aralarındaki açı eşit → benzer.",
+      inputs: [
+        { name: "c", label: "|AB| = c", min: 3, max: 8, step: 0.1, def: 5 },
+        { name: "B", label: "∠B", min: 30, max: 120, step: 1, def: 60 },
+        { name: "a", label: "|BC| = a", min: 3, max: 8, step: 0.1, def: 6 },
+      ],
+      build: (v) => TriGeo.KAK(v.c, v.B, v.a),
+    },
+  };
+
+  let curKey = "aa";
+  let values = {};
+  const refs = {};
+
+  function buildSVGShell() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    svg.appendChild(svgEl("rect", { class: "port-bg port-t1", x: port1.x, y: port1.y, width: port1.w, height: port1.h, rx: 12 }));
+    svg.appendChild(svgEl("rect", { class: "port-bg port-t2-sim", x: port2.x, y: port2.y, width: port2.w, height: port2.h, rx: 12 }));
+    const t1 = svg.appendChild(svgEl("text", { class: "port-title port-t1-title", x: port1.x + 18, y: port1.y - 6 })); t1.textContent = "T₁";
+    const t2 = svg.appendChild(svgEl("text", { class: "port-title port-t2-sim-title", x: port2.x + 18, y: port2.y - 6 })); t2.textContent = "T₂ = k · T₁";
+    refs.g1 = svg.appendChild(svgEl("g", {}));
+    refs.g2 = svg.appendChild(svgEl("g", {}));
+  }
+
+  function renderInto(container, t, port, externalScale) {
+    TriGeo.drawRichTriangle(container, t, port, externalScale);
+  }
+
+  // T1'i k ile ölçekle → T2 elde et (aynı şekil, farklı boyut)
+  function scaleTriangle(t, k) {
+    if (!t) return null;
+    return {
+      A: { x: t.A.x * k, y: t.A.y * k },
+      B: { x: t.B.x * k, y: t.B.y * k },
+      C: { x: t.C.x * k, y: t.C.y * k },
+    };
+  }
+
+  function renderInputs() {
+    const host = $("#sim-inputs");
+    host.innerHTML = "";
+    const c = CRITERIA[curKey];
+    c.inputs.forEach((inp) => {
+      if (values[inp.name] === undefined) values[inp.name] = inp.def;
+      const row = document.createElement("div");
+      row.className = "field";
+      row.innerHTML = `
+        <span class="lbl">${inp.label}</span>
+        <input id="sim-in-${inp.name}" type="range" min="${inp.min}" max="${inp.max}" step="${inp.step}" value="${values[inp.name]}" />
+        <input class="val-input" id="sim-in-${inp.name}-num" type="number" step="${inp.step}" min="${inp.min}" max="${inp.max}" value="${values[inp.name]}" />
+      `;
+      host.appendChild(row);
+      const slider = row.querySelector("input[type=range]");
+      const num = row.querySelector("input[type=number]");
+      const onChange = (src) => () => {
+        let v = Number(src.value);
+        if (!Number.isFinite(v)) return;
+        v = clamp(v, inp.min, inp.max);
+        values[inp.name] = v;
+        slider.value = v;
+        if (document.activeElement !== num) num.value = (inp.step < 1 ? v.toFixed(1) : v);
+        update();
+      };
+      slider.addEventListener("input", onChange(slider));
+      num.addEventListener("input", onChange(num));
+      num.addEventListener("blur", onChange(num));
+    });
+  }
+
+  function buildTable(m1, m2, k) {
+    const host = $("#sim-table");
+    host.innerHTML = `<div class="cmp-row header"><span>Ölçü</span><span>T₁</span><span>T₂</span><span>oran T₂/T₁</span></div>`;
+    const rows = [
+      { k: "|BC| = a", v1: m1?.a, v2: m2?.a, unit: "", isRatio: true },
+      { k: "|AC| = b", v1: m1?.b, v2: m2?.b, unit: "", isRatio: true },
+      { k: "|AB| = c", v1: m1?.c, v2: m2?.c, unit: "", isRatio: true },
+      { k: "∠A", v1: m1?.A, v2: m2?.A, unit: "°", isRatio: false },
+      { k: "∠B", v1: m1?.B, v2: m2?.B, unit: "°", isRatio: false },
+      { k: "∠C", v1: m1?.C, v2: m2?.C, unit: "°", isRatio: false },
+    ];
+    rows.forEach((r) => {
+      let cmp;
+      if (r.isRatio) {
+        const ratio = r.v1 && r.v2 ? r.v2 / r.v1 : null;
+        const ok = ratio && Math.abs(ratio - k) < 0.02;
+        cmp = `<span class="ratio">${ratio ? ratio.toFixed(3) : "—"} ${ok ? "✓" : ""}</span>`;
+      } else {
+        const eq = (r.v1 != null && r.v2 != null && Math.abs(r.v1 - r.v2) < 0.05);
+        cmp = `<span class="${eq ? "check-ok" : "check-warn"}">${eq ? "eşit ✓" : "≠"}</span>`;
+      }
+      const row = document.createElement("div");
+      row.className = "cmp-row";
+      row.innerHTML = `
+        <span>${r.k}</span>
+        <span>${r.v1 == null ? "—" : r.v1.toFixed(2) + r.unit}</span>
+        <span>${r.v2 == null ? "—" : r.v2.toFixed(2) + r.unit}</span>
+        ${cmp}`;
+      host.appendChild(row);
+    });
+  }
+
+  function update() {
+    const c = CRITERIA[curKey];
+    $("#sim-crit-v").textContent = c.label;
+    $("#sim-info").innerHTML = `<b>${c.label}</b>: ${c.info}`;
+    const k = Number($("#sim-k").value);
+    $("#sim-k-num").value = k.toFixed(2);
+
+    const t1 = c.build(values);
+    const t2 = scaleTriangle(t1, k);
+    // Paylaşılan ölçek: iki üçgeni aynı piksel-başına-birim ölçeğinde çiz
+    // → k arttıkça T₂ görsel olarak da büyür, k azaldıkça küçülür.
+    const sharedScale = (t1 && t2) ? TriGeo.computeSharedScale(t1, t2, port1) : null;
+    renderInto(refs.g1, t1, port1, sharedScale);
+    renderInto(refs.g2, t2, port2, sharedScale);
+    const m1 = TriGeo.measure(t1);
+    const m2 = TriGeo.measure(t2);
+    buildTable(m1, m2, k);
+
+    const v = $("#sim-verdict");
+    if (!t1 || !t2) {
+      v.className = "verdict verdict-warn";
+      v.textContent = "Geçersiz";
+      return;
+    }
+    const anglesEq = m1 && m2 &&
+      Math.abs(m1.A - m2.A) < 0.1 && Math.abs(m1.B - m2.B) < 0.1 && Math.abs(m1.C - m2.C) < 0.1;
+    if (anglesEq) {
+      v.className = "verdict verdict-ok";
+      v.textContent = `T₁ ∼ T₂ · benzer (k = ${k.toFixed(2)})`;
+    } else {
+      v.className = "verdict verdict-warn";
+      v.textContent = "Açılar eşit değil — benzer değil";
+    }
+  }
+
+  function onCritChange() {
+    curKey = $("#sim-criterion").value;
+    values = {};
+    renderInputs();
+    update();
+  }
+
+  function onKSlider() {
+    $("#sim-k-num").value = Number($("#sim-k").value).toFixed(2);
+    update();
+  }
+  function onKNum() {
+    let v = Number($("#sim-k-num").value);
+    if (!Number.isFinite(v)) return;
+    v = clamp(v, 0.3, 3);
+    $("#sim-k").value = v;
+    update();
+  }
+
+  function init() {
+    buildSVGShell();
+    renderInputs();
+    $("#sim-criterion").addEventListener("change", onCritChange);
+    $("#sim-k").addEventListener("input", onKSlider);
+    $("#sim-k-num").addEventListener("input", onKNum);
+    $("#sim-k-num").addEventListener("blur", onKNum);
+    $("#sim-reset").addEventListener("click", () => { values = {}; renderInputs(); update(); });
+    update();
+  }
+  return { init };
+})();
+
+// ============================================================
+// Module H · Probability lab · dice & coin
+// -------------
+// Keşif modülü · puan YOK (DESIGN PRINCIPLE #1).
+// 3 mod:
+//   die1  : tek zar (1d6) — her yüz 1/6 (uniform)
+//   die2  : iki zar toplamı (2d6) — 2..12, piramit (üçgen) dağılım
+//   coin10: 10 madeni para · tura sayısı — Binom(10, 0.5), çan şekli
+// ============================================================
+const ProbMod = (() => {
+  const svg = $("#prob-hist");
+  const refs = { barsTheo: [], barsExp: [], labels: [], freq: [] };
+  const W = 720, H = 360;
+  const padL = 50, padR = 30, padT = 30, padB = 60;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+
+  const MODES = {
+    die1: {
+      label: "1d6",
+      cats: [1, 2, 3, 4, 5, 6],
+      theo: () => Array(6).fill(1 / 6),
+      run: () => randomInt(1, 6),
+      expected: 3.5,
+    },
+    die2: {
+      label: "2d6",
+      cats: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      // Triangular distribution for sum of two d6
+      theo: () => {
+        // weights 1,2,3,4,5,6,5,4,3,2,1 over 36
+        const w = [1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1];
+        return w.map((x) => x / 36);
+      },
+      run: () => randomInt(1, 6) + randomInt(1, 6),
+      expected: 7,
+    },
+    coin10: {
+      label: "10 para · tura",
+      cats: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      // Binom(10, 0.5): C(10,k) / 1024
+      theo: () => {
+        const C = [1, 10, 45, 120, 210, 252, 210, 120, 45, 10, 1];
+        return C.map((c) => c / 1024);
+      },
+      run: () => {
+        let heads = 0;
+        for (let i = 0; i < 10; i++) if (Math.random() < 0.5) heads++;
+        return heads;
+      },
+      expected: 5,
+    },
+  };
+
+  // State: counts per category, total rolls, mode
+  const state = { mode: "die2", counts: {}, total: 0, lastResult: null };
+
+  function resetCounts() {
+    state.counts = {};
+    MODES[state.mode].cats.forEach((c) => (state.counts[c] = 0));
+    state.total = 0;
+    state.lastResult = null;
+  }
+
+  function buildSVG() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    // Axes
+    svg.appendChild(svgEl("line", {
+      class: "axis", x1: padL, y1: padT, x2: padL, y2: H - padB,
+      stroke: "#cbd5e1",
+    }));
+    svg.appendChild(svgEl("line", {
+      class: "axis", x1: padL, y1: H - padB, x2: W - padR, y2: H - padB,
+      stroke: "#cbd5e1",
+    }));
+    // Y-axis title
+    const yt = svg.appendChild(svgEl("text", {
+      x: padL - 30, y: padT - 8, fill: "#94a3b8", "font-size": 11,
+    }));
+    yt.textContent = "Oran";
+
+    rebuildBars();
+  }
+
+  function rebuildBars() {
+    // Remove previous bar nodes (keep axes — first two children)
+    while (svg.childNodes.length > 3) svg.removeChild(svg.lastChild);
+    refs.barsTheo.length = 0;
+    refs.barsExp.length = 0;
+    refs.labels.length = 0;
+    refs.freq.length = 0;
+
+    const cats = MODES[state.mode].cats;
+    const gap = 6;
+    const barW = (innerW - gap * (cats.length - 1)) / cats.length;
+
+    cats.forEach((cat, i) => {
+      const x = padL + i * (barW + gap);
+      // Theoretical bar (background outline)
+      const theo = svg.appendChild(svgEl("rect", {
+        class: "bar-theo", x, y: H - padB, width: barW, height: 0, rx: 4,
+      }));
+      // Experimental bar (filled)
+      const exp = svg.appendChild(svgEl("rect", {
+        class: "bar-exp", x: x + 4, y: H - padB, width: barW - 8, height: 0, rx: 3,
+      }));
+      // Frequency label (above bar)
+      const freq = svg.appendChild(svgEl("text", {
+        class: "freq-label", x: x + barW / 2, y: H - padB,
+        "text-anchor": "middle",
+      }));
+      // Category label (below axis)
+      const lbl = svg.appendChild(svgEl("text", {
+        class: "cat-label", x: x + barW / 2, y: H - padB + 18,
+        "text-anchor": "middle",
+      }));
+      lbl.textContent = cat;
+
+      refs.barsTheo.push(theo);
+      refs.barsExp.push(exp);
+      refs.labels.push(lbl);
+      refs.freq.push(freq);
+    });
+  }
+
+  function draw() {
+    const cats = MODES[state.mode].cats;
+    const theo = MODES[state.mode].theo();
+    const maxTheo = Math.max(...theo);
+    // Scale so that theoretical max fills ~85% of inner height
+    const visMax = Math.max(maxTheo, 0.01) * 1.15;
+
+    cats.forEach((cat, i) => {
+      const expProb = state.total > 0 ? state.counts[cat] / state.total : 0;
+      const theoH = (theo[i] / visMax) * innerH;
+      const expH  = (expProb / visMax) * innerH;
+      setAttrs(refs.barsTheo[i], {
+        y: H - padB - theoH,
+        height: theoH,
+      });
+      setAttrs(refs.barsExp[i], {
+        y: H - padB - expH,
+        height: expH,
+      });
+      if (state.total > 0 && state.counts[cat] > 0) {
+        refs.freq[i].textContent = state.counts[cat];
+        setAttrs(refs.freq[i], { y: H - padB - expH - 4 });
+      } else {
+        refs.freq[i].textContent = "";
+      }
+    });
+  }
+
+  function updateStats() {
+    const cats = MODES[state.mode].cats;
+    let sum = 0;
+    let modeCat = null, modeCount = 0;
+    cats.forEach((cat) => {
+      const c = state.counts[cat] || 0;
+      sum += cat * c;
+      if (c > modeCount) { modeCount = c; modeCat = cat; }
+    });
+    const mean = state.total > 0 ? (sum / state.total).toFixed(2) : "—";
+    const mode = modeCount > 0 ? String(modeCat) : "—";
+
+    $("#prob-mini").querySelector("[data-k='total']").textContent = state.total;
+    $("#prob-mini").querySelector("[data-k='mean']").textContent = mean;
+    $("#prob-mini").querySelector("[data-k='mode']").textContent = mode;
+
+    const last = state.lastResult;
+    $("#prob-last").textContent = last == null ? "Son atış: —" : `Son atış: ${last}`;
+
+    // Pedagogical hint based on mode + sample size
+    const fb = $("#prob-fb");
+    const modeInfo = MODES[state.mode];
+    if (state.total === 0) {
+      fb.textContent = "İpucu: Atış sayısı az iken deneysel dağılım düzensiz, arttıkça teorik dağılıma yakınsar.";
+    } else if (state.total < 50) {
+      fb.textContent = `Az örneklem (${state.total}). Ortalama ${mean}, teorik beklenen ${modeInfo.expected}. Daha çok at.`;
+    } else if (state.total < 500) {
+      fb.textContent = `${state.total} atış. Gözlenen ortalama ${mean} ↔ teorik ${modeInfo.expected}. Dağılım şekillenmeye başlıyor.`;
+    } else {
+      fb.textContent = `${state.total} atış · ortalama ${mean} (teorik ${modeInfo.expected}). Deneysel frekanslar teorik dağılıma yaklaştı.`;
+    }
+  }
+
+  function rollOnce() {
+    const r = MODES[state.mode].run();
+    state.counts[r] = (state.counts[r] || 0) + 1;
+    state.total += 1;
+    state.lastResult = r;
+  }
+
+  function runN() {
+    const n = clamp(Number($("#prob-trials").value) || 500, 10, 10000);
+    for (let i = 0; i < n; i++) rollOnce();
+    draw();
+    updateStats();
+  }
+  function rollSingle() {
+    rollOnce();
+    draw();
+    updateStats();
   }
   function reset() {
-    series = [];
-    drawBars(Number($("#p-slider").value), 0);
-    drawConvergence(Number($("#p-slider").value));
-    $("#prob-fb").textContent = "";
-    $("#prob-fb").className = "feedback";
+    resetCounts();
+    draw();
+    updateStats();
   }
-  function updateLabels() {
-    $("#p-value").textContent = Number($("#p-slider").value).toFixed(2);
-    $("#trial-info").textContent = $("#trial-count").value;
+  function onModeChange() {
+    state.mode = $("#prob-mode").value;
+    $("#prob-mode-v").textContent = MODES[state.mode].label;
+    resetCounts();
+    rebuildBars();
+    draw();
+    updateStats();
   }
+  function onTrialsSlider() {
+    $("#prob-trials-num").value = $("#prob-trials").value;
+  }
+  function onTrialsNum() {
+    let v = Number($("#prob-trials-num").value);
+    if (!Number.isFinite(v)) return;
+    v = clamp(v, 10, 10000);
+    $("#prob-trials").value = v;
+  }
+
   function init() {
-    $("#p-slider").addEventListener("input", () => {
-      updateLabels();
-      drawBars(Number($("#p-slider").value), series.length ? series[series.length-1] : 0);
-      drawConvergence(Number($("#p-slider").value));
-    });
-    $("#trial-count").addEventListener("input", updateLabels);
-    $("#run-sim").addEventListener("click", simulate);
+    resetCounts();
+    buildSVG();
+    draw();
+    updateStats();
+    $("#prob-mode").addEventListener("change", onModeChange);
+    $("#prob-trials").addEventListener("input", onTrialsSlider);
+    $("#prob-trials-num").addEventListener("input", onTrialsNum);
+    $("#prob-trials-num").addEventListener("blur", onTrialsNum);
+    $("#run-sim").addEventListener("click", runN);
+    $("#add-one").addEventListener("click", rollSingle);
     $("#reset-sim").addEventListener("click", reset);
-    updateLabels();
-    drawBars(0.5, 0);
-    drawConvergence(0.5);
-    renderModuleMini("prob");
   }
   return { init };
 })();
@@ -1713,14 +3728,21 @@ function bootstrap() {
   loadState();
   renderGlobalStats();
   initTabs();
-  NumLine.init();
+  initInnerTabs();
+  NumLine.init();       // A1 · Aralık Avı
+  IntervalOpsMod.init(); // A2 · Aralık İşlemleri (yeni iç sekme)
+  VennMod.init();       // B1 · Sayı Kümeleri Sınıflandırma
+  VennOpsMod.init();    // B2 · Küme İşlemleri
   FunctionMod.init();
   RefFuncMod.init();
+  AnalyticLineMod.init();
   TrigMod.init();
   TriangleMod.init();
+  TriCongruenceMod.init();  // G2
+  TriSimilarityMod.init();  // G3
   ProbMod.init();
   BayesMod.init();
-  ["numline", "function", "reffunc", "trig", "prob"].forEach(renderModuleMini);
+  ["numline", "venn", "function", "reffunc", "trig"].forEach(renderModuleMini);
 }
 
 document.addEventListener("DOMContentLoaded", bootstrap);

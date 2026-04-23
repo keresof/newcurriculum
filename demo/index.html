@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MathLab TR · TYMM 9-10 Matematik Oyun Alanı</title>
+    <title>MaarifLab · TYMM Matematik Oyun Alanı</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -18,8 +18,8 @@
         <div class="brand">
           <div class="brand-mark">M</div>
           <div class="brand-text">
-            <h1>MathLab TR</h1>
-            <small>TYMM 9-10 · Etkileşimli Matematik Oyun Alanı</small>
+            <h1>MaarifLab</h1>
+            <small>TYMM · Etkileşimli Matematik Oyun Alanı</small>
           </div>
         </div>
         <div class="stats" aria-label="İstatistikler">
@@ -41,98 +41,272 @@
       <nav class="tabs" role="tablist" aria-label="Modüller">
         <button class="tab active" data-tab="numline" role="tab">
           <span class="ix">A</span>
-          <span class="ttl"><strong>Sayı Doğrusu Avı</strong><span>9 · Sayılar</span></span>
+          <span class="ttl"><strong>Sayı Doğrusu Avı</strong><span>9 · Sayılar <em class="tag-mode target">görev</em></span></span>
+        </button>
+        <button class="tab" data-tab="venn" role="tab">
+          <span class="ix">B</span>
+          <span class="ttl"><strong>Sayı Kümeleri Venn</strong><span>9 · ℕ⊂ℤ⊂ℚ⊂ℝ <em class="tag-mode target">görev</em></span></span>
         </button>
         <button class="tab" data-tab="function" role="tab">
-          <span class="ix">B</span>
-          <span class="ttl"><strong>Fonksiyon Makinesi</strong><span>9-10 · Doğrusal</span></span>
+          <span class="ix">C</span>
+          <span class="ttl"><strong>Fonksiyon Makinesi</strong><span>9-10 · Doğrusal <em class="tag-mode target">görev</em></span></span>
         </button>
         <button class="tab" data-tab="reffunc" role="tab">
-          <span class="ix">C</span>
-          <span class="ttl"><strong>Referans Fonksiyon</strong><span>10 · x, x², √x, 1/x, |x|</span></span>
+          <span class="ix">D</span>
+          <span class="ttl"><strong>Referans Fonksiyon</strong><span>10 · x, x², √x, 1/x, |x| <em class="tag-mode target">görev</em></span></span>
+        </button>
+        <button class="tab" data-tab="analytic" role="tab">
+          <span class="ix">E</span>
+          <span class="ttl"><strong>Analitik Doğru</strong><span>10 · Eğim, Uzaklık <em class="tag-mode explore">keşif</em></span></span>
         </button>
         <button class="tab" data-tab="trig" role="tab">
-          <span class="ix">D</span>
-          <span class="ttl"><strong>Trigonometri Üçgeni</strong><span>10 · sin, cos, tan</span></span>
+          <span class="ix">F</span>
+          <span class="ttl"><strong>Trigonometri Lab</strong><span>10 · sin, cos, tan <em class="tag-mode target">görev</em></span></span>
         </button>
         <button class="tab" data-tab="triangle" role="tab">
-          <span class="ix">E</span>
-          <span class="ttl"><strong>Üçgen Laboratuvarı</strong><span>9 · Açı-Kenar</span></span>
+          <span class="ix">G</span>
+          <span class="ttl"><strong>Üçgen Laboratuvarı</strong><span>9 · Açı-Kenar <em class="tag-mode explore">keşif</em></span></span>
         </button>
         <button class="tab" data-tab="prob" role="tab">
-          <span class="ix">F</span>
-          <span class="ttl"><strong>Olasılık Lab</strong><span>9-10 · Yakınsama</span></span>
+          <span class="ix">H</span>
+          <span class="ttl"><strong>Olasılık Lab · Zar</strong><span>9-10 · 1d6, 2d6, para <em class="tag-mode explore">keşif</em></span></span>
         </button>
         <button class="tab" data-tab="bayes" role="tab">
-          <span class="ix">G</span>
-          <span class="ttl"><strong>Bayes Laboratuvarı</strong><span>10 · Koşullu Olasılık</span></span>
+          <span class="ix">I</span>
+          <span class="ttl"><strong>Bayes Laboratuvarı</strong><span>10 · Koşullu Olasılık <em class="tag-mode explore">keşif</em></span></span>
         </button>
       </nav>
 
-      <!-- ========== A · Number line ========== -->
+      <!-- ========== A · Sayı Doğrusu Laboratuvarı (inner tabs) ========== -->
       <section id="mod-numline" class="module active" role="tabpanel">
         <div class="mod-header">
           <div>
-            <h2>Sayı Doğrusu Avı</h2>
-            <p>Hedef aralığı görsel olarak inşa et: uçları sürükle veya kaydırıcıları kullan, dolu/boş daireye tıklayarak dahil/hariç durumunu değiştir. Her etkileşim simültane güncellenir.</p>
+            <h2>Sayı Doğrusu Laboratuvarı</h2>
+            <p>Aralıkları görsel olarak inşa et <b>ve</b> iki aralığın birleşim, kesişim, fark, tümleme işlemlerini keşfet — küme ↔ aralık köprüsü.</p>
           </div>
           <span class="mod-tag">MAT.9.1.2 · Sayılar</span>
         </div>
-        <div class="mod-body">
-          <div class="stage">
-            <svg class="numline" id="numline-svg" viewBox="0 0 720 240" preserveAspectRatio="xMidYMid meet"></svg>
-            <div class="legend">
-              <span><span class="sw target"></span>Hedef aralık (turuncu)</span>
-              <span><span class="sw user"></span>Senin aralığın (mor)</span>
-              <span style="margin-left:auto;color:var(--muted);">İpucu: Daireye tıkla → kapsam değişir</span>
+
+        <div class="inner-tabs" role="tablist">
+          <button class="inner-tab active" data-inner="a-hunt" role="tab">
+            <span class="ix-mini">A1</span> Aralık Avı
+            <em class="tag-mode target">görev</em>
+          </button>
+          <button class="inner-tab" data-inner="a-ops" role="tab">
+            <span class="ix-mini">A2</span> Aralık İşlemleri
+            <em class="tag-mode explore">keşif</em>
+          </button>
+        </div>
+
+        <!-- Inner panel A1 · Hedef aralık avı -->
+        <div class="inner-panel active" data-inner-panel="a-hunt">
+          <div class="mod-body">
+            <div class="stage">
+              <svg class="numline" id="numline-svg" viewBox="0 0 720 240" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="legend">
+                <span><span class="sw target"></span>Hedef aralık (turuncu)</span>
+                <span><span class="sw user"></span>Senin aralığın (mor)</span>
+                <span style="margin-left:auto;color:var(--muted);">İpucu: Daireye tıkla → kapsam değişir</span>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="target" id="numline-target">Hedef yükleniyor…</div>
+              <div class="controls">
+                <div class="field">
+                  <span class="lbl">Sol uç</span>
+                  <input id="num-left" type="range" min="-10" max="10" step="1" value="-3" />
+                  <span class="val" id="num-left-v">-3</span>
+                </div>
+                <div class="field">
+                  <span class="lbl">Sağ uç</span>
+                  <input id="num-right" type="range" min="-10" max="10" step="1" value="4" />
+                  <span class="val" id="num-right-v">4</span>
+                </div>
+                <div class="field">
+                  <span class="lbl">Sol kapsam</span>
+                  <select id="num-left-type">
+                    <option value="closed">Dahil [</option>
+                    <option value="open">Hariç (</option>
+                  </select>
+                  <span class="val" id="num-li">[</span>
+                </div>
+                <div class="field">
+                  <span class="lbl">Sağ kapsam</span>
+                  <select id="num-right-type">
+                    <option value="closed">Dahil ]</option>
+                    <option value="open">Hariç )</option>
+                  </select>
+                  <span class="val" id="num-ri">]</span>
+                </div>
+              </div>
+              <div class="mini" id="numline-mini">
+                <div class="cell"><div class="k">Görev</div><div class="v" data-k="task">1</div></div>
+                <div class="cell"><div class="k">Doğru</div><div class="v" data-k="ok">0</div></div>
+                <div class="cell"><div class="k">Doğruluk</div><div class="v" data-k="acc">—</div></div>
+              </div>
+              <div class="actions">
+                <button class="primary" id="numline-check">Kontrol Et</button>
+                <button class="ghost" id="numline-new">Yeni Görev</button>
+                <button class="ghost" id="numline-hint">İpucu</button>
+              </div>
+              <div class="feedback" id="numline-fb"></div>
             </div>
           </div>
-          <div class="panel">
-            <div class="target" id="numline-target">Hedef yükleniyor…</div>
-            <div class="controls">
-              <div class="field">
-                <span class="lbl">Sol uç</span>
-                <input id="num-left" type="range" min="-10" max="10" step="1" value="-3" />
-                <span class="val" id="num-left-v">-3</span>
-              </div>
-              <div class="field">
-                <span class="lbl">Sağ uç</span>
-                <input id="num-right" type="range" min="-10" max="10" step="1" value="4" />
-                <span class="val" id="num-right-v">4</span>
-              </div>
-              <div class="field">
-                <span class="lbl">Sol kapsam</span>
-                <select id="num-left-type">
-                  <option value="closed">Dahil [</option>
-                  <option value="open">Hariç (</option>
-                </select>
-                <span class="val" id="num-li">[</span>
-              </div>
-              <div class="field">
-                <span class="lbl">Sağ kapsam</span>
-                <select id="num-right-type">
-                  <option value="closed">Dahil ]</option>
-                  <option value="open">Hariç )</option>
-                </select>
-                <span class="val" id="num-ri">]</span>
+        </div>
+
+        <!-- Inner panel A2 · Aralık İşlemleri -->
+        <div class="inner-panel" data-inner-panel="a-ops">
+          <div class="mod-body">
+            <div class="stage">
+              <svg class="numline-ops" id="aops-svg" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="legend">
+                <span><span class="sw" style="background:rgba(99,102,241,0.45);border:2px solid var(--primary);"></span>A aralığı</span>
+                <span><span class="sw" style="background:rgba(245,158,11,0.45);border:2px solid var(--accent);"></span>B aralığı</span>
+                <span><span class="sw" style="background:#fef3c7;border:2px solid #b45309;"></span>İşlem sonucu</span>
+                <span style="margin-left:auto;color:var(--muted);">Uçları sürükle · daireye tıkla kapsam değişir</span>
               </div>
             </div>
-            <div class="mini" id="numline-mini">
-              <div class="cell"><div class="k">Görev</div><div class="v" data-k="task">1</div></div>
-              <div class="cell"><div class="k">Doğru</div><div class="v" data-k="ok">0</div></div>
-              <div class="cell"><div class="k">Doğruluk</div><div class="v" data-k="acc">—</div></div>
+            <div class="panel">
+              <div class="target" id="aops-target">İki aralık seç ve üzerlerinde küme işlemi uygula.</div>
+              <div class="controls">
+                <div class="field">
+                  <span class="lbl">İşlem</span>
+                  <select id="aops-op">
+                    <option value="union">A ∪ B · birleşim</option>
+                    <option value="inter">A ∩ B · kesişim</option>
+                    <option value="diff_ab">A \ B · fark</option>
+                    <option value="diff_ba">B \ A · fark</option>
+                    <option value="comp_a">A' · tümleme (E = ℝ)</option>
+                    <option value="comp_b">B' · tümleme (E = ℝ)</option>
+                    <option value="sym">A △ B · simetrik fark</option>
+                  </select>
+                  <span class="val mono" id="aops-op-v">∪</span>
+                </div>
+              </div>
+              <div class="info-card" id="aops-info"><b>Birleşim</b>: A ∪ B = { x | x ∈ A <b>veya</b> x ∈ B }</div>
+              <div class="readout" id="aops-readout" style="grid-template-columns: 1fr;">
+                <div><span class="lbl">A (aralık)</span><span class="val mono" id="aops-a">[−3, 4]</span></div>
+                <div><span class="lbl">A (küme)</span><span class="val mono" id="aops-a-set">{x ∈ ℝ : −3 ≤ x ≤ 4}</span></div>
+                <div><span class="lbl">B (aralık)</span><span class="val mono" id="aops-b">[1, 7]</span></div>
+                <div><span class="lbl">B (küme)</span><span class="val mono" id="aops-b-set">{x ∈ ℝ : 1 ≤ x ≤ 7}</span></div>
+                <div><span class="lbl">Sonuç (aralık)</span><span class="val mono" id="aops-res">—</span></div>
+                <div><span class="lbl">Sonuç (küme)</span><span class="val mono" id="aops-res-set">—</span></div>
+              </div>
+              <div class="actions">
+                <button class="ghost" id="aops-reset">Varsayılana dön</button>
+                <button class="ghost" id="aops-random">Rastgele aralıklar</button>
+              </div>
+              <div class="feedback" id="aops-fb" style="color:var(--ink-soft);font-weight:500;">Keşif modülü: iki aralık üzerinde küme işlemleri + aralık ↔ küme gösterimi köprüsü.</div>
             </div>
-            <div class="actions">
-              <button class="primary" id="numline-check">Kontrol Et</button>
-              <button class="ghost" id="numline-new">Yeni Görev</button>
-              <button class="ghost" id="numline-hint">İpucu</button>
-            </div>
-            <div class="feedback" id="numline-fb"></div>
           </div>
         </div>
       </section>
 
-      <!-- ========== B · Function machine ========== -->
+      <!-- ========== B · Kümeler Laboratuvarı (iç sekmeli) ========== -->
+      <section id="mod-venn" class="module" role="tabpanel">
+        <div class="mod-header">
+          <div>
+            <h2>Kümeler Laboratuvarı</h2>
+            <p>Sayıları hiyerarşik kümelere (ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ) yerleştir <b>ve</b> iki küme üzerinde birleşim, kesişim, fark, tümleme gibi işlemleri keşfet.</p>
+          </div>
+          <span class="mod-tag">MAT.9.1.2-3 · Kümeler</span>
+        </div>
+
+        <div class="inner-tabs" role="tablist">
+          <button class="inner-tab active" data-inner="classify" role="tab">
+            <span class="ix-mini">B1</span> Sayı Kümeleri · Sınıflandırma
+            <em class="tag-mode target">görev</em>
+          </button>
+          <button class="inner-tab" data-inner="ops" role="tab">
+            <span class="ix-mini">B2</span> Küme İşlemleri · ∪ ∩ \ '
+            <em class="tag-mode explore">keşif</em>
+          </button>
+        </div>
+
+        <!-- Inner panel 1 · Number classification -->
+        <div class="inner-panel active" data-inner-panel="classify">
+          <div class="mod-body">
+            <div class="stage">
+              <svg class="venn" id="venn-svg" viewBox="0 0 720 420" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="legend">
+                <span><span class="sw venn-N"></span>ℕ doğal</span>
+                <span><span class="sw venn-Z"></span>ℤ tam</span>
+                <span><span class="sw venn-Q"></span>ℚ rasyonel</span>
+                <span><span class="sw venn-I"></span>ℝ\ℚ irrasyonel</span>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="target" id="venn-target">Hedef yükleniyor…</div>
+              <div class="info-card" id="venn-info">
+                <b>İpucu:</b> Her küme bir üsttekinin alt kümesidir. Örn. 5 ∈ ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ. Ama √2 irrasyoneldir — yalnızca ℝ'ye ait, ℚ'ya ait değildir.
+              </div>
+              <div class="mini" id="venn-mini">
+                <div class="cell"><div class="k">Görev</div><div class="v" data-k="task">1</div></div>
+                <div class="cell"><div class="k">Doğru</div><div class="v" data-k="ok">0</div></div>
+                <div class="cell"><div class="k">Doğruluk</div><div class="v" data-k="acc">—</div></div>
+              </div>
+              <div class="actions">
+                <button class="ghost" id="venn-new">Yeni Görev</button>
+                <button class="ghost" id="venn-hint">İpucu</button>
+              </div>
+              <div class="feedback" id="venn-fb">Venn şemasındaki doğru bölgeye tıkla.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inner panel 2 · Set operations -->
+        <div class="inner-panel" data-inner-panel="ops">
+          <div class="mod-body">
+            <div class="stage">
+              <svg class="venn-ops" id="venn-ops-svg" viewBox="0 0 720 480" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="legend">
+                <span><span class="sw" style="background:rgba(99,102,241,0.4);border:2px solid var(--primary);"></span>A kümesi</span>
+                <span><span class="sw" style="background:rgba(245,158,11,0.4);border:2px solid var(--accent);"></span>B kümesi</span>
+                <span><span class="sw" style="background:#fef3c7;border:2px solid #b45309;"></span>İşlem sonucu</span>
+                <span style="margin-left:auto;color:var(--muted);">Elementi tıkla: A → A∩B → B → E\(A∪B) sırayla döner</span>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="target" id="venn-ops-target">İşlem seç ve sonucu gözle.</div>
+              <div class="controls">
+                <div class="field">
+                  <span class="lbl">İşlem</span>
+                  <select id="venn-op">
+                    <option value="union">A ∪ B · birleşim</option>
+                    <option value="intersection">A ∩ B · kesişim</option>
+                    <option value="diff_ab">A \ B · fark</option>
+                    <option value="diff_ba">B \ A · fark</option>
+                    <option value="comp_a">A' · A'nın tümleyeni</option>
+                    <option value="comp_b">B' · B'nin tümleyeni</option>
+                    <option value="sym_diff">A △ B · simetrik fark</option>
+                    <option value="union_comp">(A ∪ B)' · De Morgan</option>
+                    <option value="inter_comp">(A ∩ B)' · De Morgan</option>
+                  </select>
+                  <span class="val mono" id="venn-op-v">∪</span>
+                </div>
+              </div>
+              <div class="info-card" id="venn-ops-info">
+                <b>A ∪ B</b> — A'da veya B'de olan tüm elementler.
+              </div>
+              <div class="readout" id="venn-ops-readout">
+                <div><span class="lbl">E (evrensel)</span><span class="val mono" id="venn-set-e">{1,…,12}</span></div>
+                <div><span class="lbl">|Sonuç|</span><span class="val mono" id="venn-set-size">0</span></div>
+                <div><span class="lbl">A</span><span class="val mono" id="venn-set-a">∅</span></div>
+                <div><span class="lbl">B</span><span class="val mono" id="venn-set-b">∅</span></div>
+                <div style="grid-column: 1 / -1;"><span class="lbl">Sonuç</span><span class="val mono" id="venn-set-result">∅</span></div>
+              </div>
+              <div class="actions">
+                <button class="ghost" id="venn-ops-reset">Tümünü dışarı</button>
+                <button class="ghost" id="venn-ops-random">Rastgele Dağıt</button>
+                <button class="ghost" id="venn-ops-preset">Örnek Kur (A,B ortak 3)</button>
+              </div>
+              <div class="feedback" id="venn-ops-fb" style="color:var(--ink-soft);font-weight:500;">Keşif modülü: sarı çerçeveli elementler seçili işlemin sonucundaki kümeye aittir.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== C · Function machine ========== -->
       <section id="mod-function" class="module" role="tabpanel">
         <div class="mod-header">
           <div>
@@ -228,6 +402,17 @@
               <div class="cell"><div class="k">Doğru</div><div class="v" data-k="ok">0</div></div>
               <div class="cell"><div class="k">Doğruluk</div><div class="v" data-k="acc">—</div></div>
             </div>
+            <div class="readout" id="ref-qualities" style="grid-template-columns: 1fr;">
+              <div><span class="lbl">Tanım kümesi</span><span class="val mono" id="rq-dom">ℝ</span></div>
+              <div><span class="lbl">Görüntü kümesi</span><span class="val mono" id="rq-range">ℝ</span></div>
+              <div><span class="lbl">Artan/Azalan</span><span class="val mono" id="rq-mono">artan (ℝ)</span></div>
+              <div><span class="lbl">Sıfırı (f(x)=0)</span><span class="val mono" id="rq-zero">—</span></div>
+              <div><span class="lbl">y-kesim f(0)</span><span class="val mono" id="rq-y0">—</span></div>
+              <div><span class="lbl">Ekstremum</span><span class="val mono" id="rq-ext">yok</span></div>
+              <div><span class="lbl">Simetri</span><span class="val mono" id="rq-parity">tek</span></div>
+              <div><span class="lbl">Bire-birlik</span><span class="val mono" id="rq-11">evet</span></div>
+              <div><span class="lbl">Asimptotlar</span><span class="val mono" id="rq-asym">yok</span></div>
+            </div>
             <div class="actions">
               <button class="primary" id="ref-check">Hedefi Yakala</button>
               <button class="ghost" id="ref-new">Yeni Görev</button>
@@ -238,7 +423,53 @@
         </div>
       </section>
 
-      <!-- ========== D · Trigonometry ========== -->
+      <!-- ========== E · Analytic line lab ========== -->
+      <section id="mod-analytic" class="module" role="tabpanel">
+        <div class="mod-header">
+          <div>
+            <h2>Analitik Doğru Laboratuvarı</h2>
+            <p>İki noktayı düzlemde sürükle: <b>uzaklık</b>, <b>orta nokta</b>, <b>eğim</b>, <b>eğim açısı</b> ve doğru denklemi canlı hesaplanır. Bölüm oranı ile AB parçasını belli oranda bölen noktayı (yeşil) gör.</p>
+          </div>
+          <span class="mod-tag">10.5.1-2 · Analitik İnceleme · keşif</span>
+        </div>
+        <div class="mod-body">
+          <div class="stage">
+            <svg class="analytic" id="analytic-svg" viewBox="0 0 720 500" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="legend">
+              <span><span class="sw" style="background:#6366f1;"></span>A noktası</span>
+              <span><span class="sw" style="background:#f59e0b;"></span>B noktası</span>
+              <span><span class="sw" style="background:#10b981;"></span>Bölen nokta (oran k:m)</span>
+              <span style="margin-left:auto;color:var(--muted);">Noktalar sürüklenebilir</span>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="target">
+              <b>Keşif modülü:</b> A ve B noktalarını sürükle. Tüm değerler anlık hesaplanır.
+              Bölme oranı kaydırıcısını değiştirerek |AP| / |PB| oranını kontrol et.
+            </div>
+            <div class="controls">
+              <div class="field">
+                <span class="lbl">Bölme oranı k</span>
+                <input id="an-ratio" type="range" min="0.1" max="5" step="0.1" value="1" />
+                <input class="val-input" id="an-ratio-num" type="number" step="0.1" min="0.1" max="5" value="1.0" />
+              </div>
+            </div>
+            <div class="readout" id="an-readout">
+              <div><span class="lbl">A</span><span class="val mono" id="an-a">(-4, 2)</span></div>
+              <div><span class="lbl">B</span><span class="val mono" id="an-b">(4, -2)</span></div>
+              <div><span class="lbl">|AB|</span><span class="val mono" id="an-d">—</span></div>
+              <div><span class="lbl">Orta nokta</span><span class="val mono" id="an-mid">(0, 0)</span></div>
+              <div><span class="lbl">Eğim m</span><span class="val mono" id="an-slope">—</span></div>
+              <div><span class="lbl">Eğim açısı</span><span class="val mono" id="an-angle">—</span></div>
+              <div><span class="lbl">Denklem</span><span class="val mono" id="an-eq">y = …</span></div>
+              <div><span class="lbl">Bölen P</span><span class="val mono" id="an-div">(—)</span></div>
+            </div>
+            <div class="feedback" id="an-fb" style="color:var(--ink-soft);font-weight:500;">Formül: |AB| = √((x₂−x₁)² + (y₂−y₁)²) · m = (y₂−y₁)/(x₂−x₁) · P = (m·A + k·B)/(k+m)</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== F · Trigonometry ========== -->
       <section id="mod-trig" class="module" role="tabpanel">
         <div class="mod-header">
           <div>
@@ -294,89 +525,196 @@
         </div>
       </section>
 
-      <!-- ========== E · Triangle laboratory ========== -->
+      <!-- ========== G · Triangle laboratory (inner tabs) ========== -->
       <section id="mod-triangle" class="module" role="tabpanel">
         <div class="mod-header">
           <div>
             <h2>Üçgen Laboratuvarı</h2>
-            <p>Üçgenin köşelerini sürükle. Açı toplamının her zaman 180° olduğunu, kenar uzunluklarının üçgen eşitsizliğini sağladığını ve en uzun kenarın karşısındaki açının en büyük olduğunu gözlemle.</p>
+            <p>Açı-kenar ilişkileri, <b>eşlik</b> (KKK · KAK · AKA · KAA · KKA · HK) ve <b>benzerlik</b> (AA · KKK-oran · KAK-oran) kriterleriyle üçgenleri keşfet.</p>
           </div>
-          <span class="mod-tag">MAT.9.4.1 · Üçgen</span>
+          <span class="mod-tag">MAT.9.4.1 / 9.5.1-5 · Üçgenler</span>
         </div>
-        <div class="mod-body">
-          <div class="stage">
-            <svg class="triangle" id="triangle-svg" viewBox="0 0 720 420" preserveAspectRatio="xMidYMid meet"></svg>
-            <div class="legend">
-              <span style="margin-left:auto;color:var(--muted);">İpucu: Köşeleri sürükle</span>
+
+        <div class="inner-tabs" role="tablist">
+          <button class="inner-tab active" data-inner="explore" role="tab">
+            <span class="ix-mini">G1</span> Serbest Keşif
+            <em class="tag-mode explore">keşif</em>
+          </button>
+          <button class="inner-tab" data-inner="congruence" role="tab">
+            <span class="ix-mini">G2</span> Eşlik Kriterleri
+            <em class="tag-mode explore">keşif</em>
+          </button>
+          <button class="inner-tab" data-inner="similarity" role="tab">
+            <span class="ix-mini">G3</span> Benzerlik Kriterleri
+            <em class="tag-mode explore">keşif</em>
+          </button>
+        </div>
+
+        <!-- Inner panel 1 · Free exploration -->
+        <div class="inner-panel active" data-inner-panel="explore">
+          <div class="mod-body">
+            <div class="stage">
+              <svg class="triangle" id="triangle-svg" viewBox="0 0 720 420" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="legend">
+                <span style="margin-left:auto;color:var(--muted);">İpucu: Köşeleri sürükle</span>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="target" id="triangle-target">Hedef: <b>iç açı toplamı = 180°</b> her zaman doğrudur. Köşeleri sürükle ve kanıtla.</div>
+              <div class="readout" id="triangle-readout">
+                <div><span class="lbl">α (A)</span><span class="val mono" id="tri-a">60°</span></div>
+                <div><span class="lbl">β (B)</span><span class="val mono" id="tri-b">60°</span></div>
+                <div><span class="lbl">γ (C)</span><span class="val mono" id="tri-c">60°</span></div>
+                <div><span class="lbl">α+β+γ</span><span class="val mono" id="tri-sum">180°</span></div>
+                <div><span class="lbl">|BC|</span><span class="val mono" id="tri-la">—</span></div>
+                <div><span class="lbl">|AC|</span><span class="val mono" id="tri-lb">—</span></div>
+                <div><span class="lbl">|AB|</span><span class="val mono" id="tri-lc">—</span></div>
+                <div><span class="lbl">Eşitsizlik</span><span class="val mono" id="tri-ineq">✓</span></div>
+              </div>
+              <div class="actions">
+                <button class="ghost" id="triangle-reset">Eşkenar Sıfırla</button>
+                <button class="ghost" id="triangle-rand">Rastgele Üçgen</button>
+              </div>
+              <div class="feedback" id="triangle-fb"></div>
             </div>
           </div>
-          <div class="panel">
-            <div class="target" id="triangle-target">Hedef: <b>iç açı toplamı = 180°</b> her zaman doğrudur. Köşeleri sürükle ve kanıtla.</div>
-            <div class="readout" id="triangle-readout">
-              <div><span class="lbl">α (A)</span><span class="val mono" id="tri-a">60°</span></div>
-              <div><span class="lbl">β (B)</span><span class="val mono" id="tri-b">60°</span></div>
-              <div><span class="lbl">γ (C)</span><span class="val mono" id="tri-c">60°</span></div>
-              <div><span class="lbl">α+β+γ</span><span class="val mono" id="tri-sum">180°</span></div>
-              <div><span class="lbl">|BC|</span><span class="val mono" id="tri-la">—</span></div>
-              <div><span class="lbl">|AC|</span><span class="val mono" id="tri-lb">—</span></div>
-              <div><span class="lbl">|AB|</span><span class="val mono" id="tri-lc">—</span></div>
-              <div><span class="lbl">Eşitsizlik</span><span class="val mono" id="tri-ineq">✓</span></div>
+        </div>
+
+        <!-- Inner panel 2 · Congruence (G2) -->
+        <div class="inner-panel" data-inner-panel="congruence">
+          <div class="mod-body">
+            <div class="stage">
+              <svg class="tri-compare" id="cong-svg" viewBox="0 0 720 440" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="legend" id="cong-badge-host">
+                <span><span class="sw" style="background:#ef4444;"></span>A · a kenarı</span>
+                <span><span class="sw" style="background:#6366f1;"></span>B · b kenarı</span>
+                <span><span class="sw" style="background:#10b981;"></span>C · c kenarı</span>
+                <span id="cong-verdict" class="verdict verdict-ok">T₁ ≅ T₂ · eşlik sağlanıyor</span>
+              </div>
             </div>
-            <div class="actions">
-              <button class="ghost" id="triangle-reset">Eşkenar Sıfırla</button>
-              <button class="ghost" id="triangle-rand">Rastgele Üçgen</button>
+            <div class="panel">
+              <div class="target" id="cong-target">Kriter seç, ölçüleri kaydırıcılarla değiştir, iki üçgeni karşılaştır.</div>
+              <div class="controls">
+                <div class="field">
+                  <span class="lbl">Eşlik kriteri</span>
+                  <select id="cong-criterion">
+                    <option value="kkk">KKK · Kenar-Kenar-Kenar</option>
+                    <option value="kak">KAK · Kenar-Açı-Kenar</option>
+                    <option value="aka">AKA · Açı-Kenar-Açı</option>
+                    <option value="kaa">KAA · Açı-Açı-Kenar (bitişik olmayan)</option>
+                    <option value="kka">KKA · Kenar-Kenar-Açı ⚠ ambigü</option>
+                    <option value="hk">HK · Dik üçgen Hipotenüs-Kenar</option>
+                  </select>
+                  <span class="val mono" id="cong-crit-v">KKK</span>
+                </div>
+                <div id="cong-inputs"></div>
+              </div>
+              <div class="info-card" id="cong-info">KKK: Üç kenarı eşit olan üçgenler eşittir.</div>
+              <div class="cmp-table" id="cong-table">
+                <div class="cmp-row header"><span></span><span>T₁</span><span>T₂</span><span>eşit?</span></div>
+              </div>
+              <div class="actions">
+                <button class="primary" id="cong-overlay">⇔ Üst üste bindir</button>
+                <button class="ghost" id="cong-alt" style="display:none;">Alternatif üçgen (KKA)</button>
+                <button class="ghost" id="cong-reset">Varsayılana dön</button>
+              </div>
             </div>
-            <div class="feedback" id="triangle-fb"></div>
+          </div>
+        </div>
+
+        <!-- Inner panel 3 · Similarity (G3) -->
+        <div class="inner-panel" data-inner-panel="similarity">
+          <div class="mod-body">
+            <div class="stage">
+              <svg class="tri-compare" id="sim-svg" viewBox="0 0 720 440" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="legend">
+                <span><span class="sw" style="background:#ef4444;"></span>A · a kenarı (1 tick)</span>
+                <span><span class="sw" style="background:#6366f1;"></span>B · b kenarı (2 tick)</span>
+                <span><span class="sw" style="background:#10b981;"></span>C · c kenarı (3 tick)</span>
+                <span id="sim-verdict" class="verdict verdict-ok">T₁ ∼ T₂ · benzerlik sağlanıyor</span>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="target">Benzerlik kriteri + ölçek faktörü k ile T₂, T₁'in k katı olur. Açılar korunur, kenarlar k ile çarpılır.</div>
+              <div class="controls">
+                <div class="field">
+                  <span class="lbl">Benzerlik kriteri</span>
+                  <select id="sim-criterion">
+                    <option value="aa">AA · İki açı eşit</option>
+                    <option value="kkk">KKK · Üç kenar oranı eşit</option>
+                    <option value="kak">KAK · İki kenar oranı + ara açı eşit</option>
+                  </select>
+                  <span class="val mono" id="sim-crit-v">AA</span>
+                </div>
+                <div id="sim-inputs"></div>
+                <div class="field">
+                  <span class="lbl">Ölçek faktörü k</span>
+                  <input id="sim-k" type="range" min="0.3" max="3" step="0.05" value="1.5" />
+                  <input class="val-input" id="sim-k-num" type="number" step="0.05" min="0.3" max="3" value="1.5" />
+                </div>
+              </div>
+              <div class="info-card" id="sim-info">AA: İki açı eşit olan üçgenler benzerdir; kenarlar ölçek faktörü k ile orantılı.</div>
+              <div class="cmp-table" id="sim-table">
+                <div class="cmp-row header"><span></span><span>T₁</span><span>T₂</span><span>oran T₂/T₁</span></div>
+              </div>
+              <div class="actions">
+                <button class="ghost" id="sim-reset">Varsayılana dön</button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- ========== F · Probability lab ========== -->
+      <!-- ========== H · Probability lab (dice) ========== -->
       <section id="mod-prob" class="module" role="tabpanel">
         <div class="mod-header">
           <div>
-            <h2>Olasılık Laboratuvarı</h2>
-            <p>Teorik olasılığı (p) seç, deneyi çalıştır ve teorik ile deneysel sonucun yakınsamasını gör (Büyük Sayılar Yasası).</p>
+            <h2>Olasılık Laboratuvarı · Zar ve Madeni Para</h2>
+            <p>Zar at, madeni para at. Sonuç dağılımlarını keşfet: tek zar <b>uniform</b> (her yüz eşit), iki zar toplamı <b>üçgen (piramit)</b> dağılım verir — deneme sayısı arttıkça çan eğrisine benzer. Bu <b>sezgi inşa eden keşif modülüdür</b>, puan yok.</p>
           </div>
-          <span class="mod-tag">MAT.9.7.1-2 · Veriden Olasılığa</span>
+          <span class="mod-tag">MAT.9.7.1-2 · Veriden Olasılığa · keşif</span>
         </div>
         <div class="mod-body">
           <div class="stage">
-            <div class="prob-stage">
-              <div class="chart-card">
-                <h4>Teorik vs Deneysel</h4>
-                <svg class="bars" id="prob-bars" viewBox="0 0 280 220" preserveAspectRatio="xMidYMid meet"></svg>
-              </div>
-              <div class="chart-card">
-                <h4>Yakınsama (deneme sayısına göre)</h4>
-                <svg class="conv" id="prob-conv" viewBox="0 0 280 220" preserveAspectRatio="xMidYMid meet"></svg>
-              </div>
+            <svg class="prob-hist" id="prob-hist" viewBox="0 0 720 360" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="legend">
+              <span><span class="sw" style="background:rgba(245,158,11,0.35);border:2px solid var(--accent);"></span>Teorik dağılım</span>
+              <span><span class="sw" style="background:var(--primary);"></span>Deneysel frekans</span>
+              <span style="margin-left:auto;color:var(--muted);" id="prob-last">Son atış: —</span>
             </div>
           </div>
           <div class="panel">
-            <div class="target">Görev: Seçtiğin <b>p</b> değerine yakın bir deneysel oran elde et. Deneme arttıkça yakınsama keskinleşir.</div>
+            <div class="target">
+              Görev önerisi · <b>2d6</b> modunu seç, önce 10 sonra 1000 atış yap: üçgen dağılımın nasıl belirginleştiğini gözle.
+              Beklenen değer <code>E[2d6] = 7</code>.
+            </div>
             <div class="controls">
               <div class="field">
-                <span class="lbl">p (başarı)</span>
-                <input id="p-slider" type="range" min="0" max="1" step="0.01" value="0.5" />
-                <span class="val" id="p-value">0.50</span>
+                <span class="lbl">Deney türü</span>
+                <select id="prob-mode">
+                  <option value="die1">Tek zar (1d6)</option>
+                  <option value="die2" selected>İki zar toplamı (2d6)</option>
+                  <option value="coin10">10 madeni para · tura sayısı</option>
+                </select>
+                <span class="val mono" id="prob-mode-v">2d6</span>
               </div>
               <div class="field">
-                <span class="lbl">Deneme</span>
-                <input id="trial-count" type="number" min="20" max="5000" step="20" value="500" />
-                <span class="val" id="trial-info">500</span>
+                <span class="lbl">Atış sayısı</span>
+                <input id="prob-trials" type="range" min="10" max="10000" step="10" value="500" />
+                <input class="val-input" id="prob-trials-num" type="number" min="10" max="10000" step="10" value="500" />
               </div>
             </div>
             <div class="mini" id="prob-mini">
-              <div class="cell"><div class="k">Çalıştırma</div><div class="v" data-k="run">0</div></div>
-              <div class="cell"><div class="k">|fark|</div><div class="v" data-k="diff">—</div></div>
-              <div class="cell"><div class="k">Puan</div><div class="v" data-k="pts">0</div></div>
+              <div class="cell"><div class="k">Toplam atış</div><div class="v" data-k="total">0</div></div>
+              <div class="cell"><div class="k">Ortalama</div><div class="v" data-k="mean">—</div></div>
+              <div class="cell"><div class="k">Mod</div><div class="v" data-k="mode">—</div></div>
             </div>
             <div class="actions">
-              <button class="primary" id="run-sim">Deneyi Çalıştır</button>
+              <button class="primary" id="run-sim">N atış yap</button>
+              <button class="ghost" id="add-one">Tek atış</button>
               <button class="ghost" id="reset-sim">Sıfırla</button>
             </div>
-            <div class="feedback" id="prob-fb"></div>
+            <div class="feedback" id="prob-fb" style="color:var(--ink-soft);font-weight:500;">İpucu: Atış sayısı az iken deneysel dağılım düzensiz, arttıkça teorik dağılıma yakınsar.</div>
           </div>
         </div>
       </section>
@@ -434,7 +772,7 @@
       </section>
 
       <p class="footer">
-        MathLab TR · TYMM 9-10 demo. 7 etkileşimli modül · 28 modüllük yol haritasının ilk dilimi.
+        MaarifLab · TYMM Matematik Oyun Alanı — açık kaynak eğitim laboratuvarı.
       </p>
     </div>
 

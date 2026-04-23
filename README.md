@@ -1,4 +1,4 @@
-# MathLab TR · TYMM Matematik Oyun Alanı
+# MaarifLab · TYMM Matematik Oyun Alanı
 
 > Türkiye Yüzyılı Maarif Modeli (TYMM) **Hazırlık + 9 + 10. sınıf** matematik
 > öğretim programıyla birebir uyumlu, PhET benzeri etkileşimli bir matematik

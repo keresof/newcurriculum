@@ -285,6 +285,7 @@ html, body {
   outline: none;
   transition: border-color var(--tr), box-shadow var(--tr);
   font-variant-numeric: tabular-nums;
+  appearance: textfield;
   -moz-appearance: textfield;
 }
 .field .val-input::-webkit-outer-spin-button,
@@ -647,4 +648,331 @@ canvas#graph {
 .field .val.mono {
   font-family: "JetBrains Mono", monospace;
   font-size: .85rem;
+}
+
+/* Tab mode badge (görev vs keşif) */
+.tag-mode {
+  font-style: normal;
+  font-size: .62rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-left: 6px;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.tag-mode.target { background: rgba(245,158,11,.18); color: #b45309; }
+.tag-mode.explore { background: rgba(16,185,129,.15); color: #047857; }
+
+/* Info card (educational card inside panel) */
+.info-card {
+  background: linear-gradient(135deg, rgba(16,185,129,.06), rgba(99,102,241,.06));
+  border: 1px solid rgba(16,185,129,.18);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: .85rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.info-card b { color: var(--ink); }
+
+/* ===== Venn diagram ===== */
+.venn { width: 100%; height: 420px; background: #fff; border-radius: var(--radius-sm); border: 1px solid var(--line); }
+.venn text { font-family: inherit; fill: var(--ink); }
+.venn .set-region {
+  fill-opacity: 0.22;
+  stroke-width: 2.5;
+  cursor: pointer;
+  transition: fill-opacity var(--tr);
+}
+.venn .set-region:hover { fill-opacity: 0.38; }
+.venn .set-region.N { fill: #818cf8; stroke: #4338ca; }
+.venn .set-region.Z { fill: #a78bfa; stroke: #6d28d9; }
+.venn .set-region.Q { fill: #f0abfc; stroke: #a21caf; }
+.venn .set-region.I { fill: #fca5a5; stroke: #b91c1c; }
+.venn .set-label {
+  font-size: 14px;
+  font-weight: 800;
+  pointer-events: none;
+}
+.venn .number-chip {
+  fill: #fff;
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+.venn .number-text {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 800;
+  font-size: 22px;
+  fill: var(--ink);
+  pointer-events: none;
+  text-anchor: middle;
+}
+
+.legend .sw.venn-N { background: #818cf8; }
+.legend .sw.venn-Z { background: #a78bfa; }
+.legend .sw.venn-Q { background: #f0abfc; }
+.legend .sw.venn-I { background: #fca5a5; }
+
+/* ===== Analytic line ===== */
+.analytic { width: 100%; height: 500px; background: linear-gradient(180deg, #fbfcff, #f1f4fb); border-radius: var(--radius-sm); border: 1px solid var(--line); }
+.analytic text { font-family: inherit; fill: var(--ink-soft); font-size: 11px; }
+.analytic .grid-minor { stroke: #eef1fa; }
+.analytic .grid-major { stroke: #cbd5e1; }
+.analytic .axis { stroke: #0f172a; stroke-width: 1.5; }
+.analytic .line-ab { stroke: var(--primary); stroke-width: 2.5; }
+.analytic .line-perp { stroke: #94a3b8; stroke-dasharray: 4 3; }
+.analytic .point { fill: #fff; stroke-width: 3; cursor: grab; }
+.analytic .point:active { cursor: grabbing; }
+.analytic .point.A { stroke: var(--primary); }
+.analytic .point.B { stroke: var(--accent); }
+.analytic .point.P { fill: #10b981; stroke: #065f46; cursor: default; }
+.analytic .tick-label { fill: #94a3b8; font-size: 10px; }
+
+/* ===== Inner tabs (modül içi alt sekmeler) ===== */
+.inner-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 10px 20px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  overflow-x: auto;
+}
+.inner-tab {
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  font-size: .85rem;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: background var(--tr), color var(--tr);
+  margin-bottom: -1px;
+}
+.inner-tab:hover { background: var(--surface-soft); }
+.inner-tab.active {
+  color: var(--ink);
+  background: linear-gradient(180deg, rgba(99,102,241,0.06), rgba(99,102,241,0.12));
+  border-bottom: 3px solid var(--primary);
+}
+.inner-tab .ix-mini {
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  color: #fff;
+  font-size: .68rem;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-weight: 800;
+  letter-spacing: .3px;
+}
+.inner-panel { display: none; }
+.inner-panel.active { display: block; animation: fadein .2s ease; }
+@keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===== Numberline operations (A2) ===== */
+.numline-ops {
+  width: 100%;
+  height: 320px;
+  background: #fff;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+}
+.numline-ops text { font-family: inherit; user-select: none; }
+.numline-ops .axis { stroke: #cbd5e1; stroke-width: 2; }
+.numline-ops .tick { stroke: #cbd5e1; }
+.numline-ops .tick-label { fill: #94a3b8; font-size: 11px; }
+.numline-ops .row-label { fill: #94a3b8; font-size: 11px; letter-spacing: 1px; font-weight: 700; }
+.numline-ops .band-a {
+  fill: rgba(99,102,241,0.35);
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+.numline-ops .band-b {
+  fill: rgba(245,158,11,0.35);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.numline-ops .band-res {
+  fill: rgba(251,191,36,0.45);
+  stroke: #b45309;
+  stroke-width: 2.5;
+}
+.numline-ops .endpoint {
+  stroke-width: 3;
+  cursor: grab;
+  transition: r var(--tr);
+}
+.numline-ops .endpoint:active { cursor: grabbing; }
+.numline-ops .endpoint.a { stroke: var(--primary); }
+.numline-ops .endpoint.b { stroke: var(--accent); }
+.numline-ops .endpoint.closed { fill: currentColor; }
+.numline-ops .endpoint.a.closed { fill: var(--primary); }
+.numline-ops .endpoint.b.closed { fill: var(--accent); }
+.numline-ops .endpoint.open { fill: #fff; }
+.numline-ops .endpoint-label {
+  font-weight: 700;
+  font-size: 12px;
+  fill: var(--ink);
+}
+
+/* ===== Venn set operations ===== */
+.venn-ops {
+  width: 100%;
+  height: 480px;
+  background: #fff;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+}
+.venn-ops text {
+  font-family: inherit;
+  user-select: none;
+}
+.venn-ops .universe-frame {
+  fill: #fbfcff;
+  stroke: #cbd5e1;
+  stroke-width: 2;
+  stroke-dasharray: 8 4;
+}
+.venn-ops .set-A {
+  fill: rgba(99,102,241,0.18);
+  stroke: var(--primary);
+  stroke-width: 2.5;
+}
+.venn-ops .set-B {
+  fill: rgba(245,158,11,0.18);
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+.venn-ops .label-E {
+  font-size: 13px;
+  font-weight: 800;
+  fill: #64748b;
+}
+.venn-ops .label-A { font-size: 22px; font-weight: 800; fill: #4338ca; }
+.venn-ops .label-B { font-size: 22px; font-weight: 800; fill: #b45309; }
+
+.venn-ops .chip {
+  cursor: pointer;
+  transition: opacity var(--tr), transform var(--tr);
+}
+.venn-ops .chip-circle {
+  fill: #fff;
+  stroke: var(--ink);
+  stroke-width: 2;
+  transition: fill var(--tr), stroke var(--tr), stroke-width var(--tr);
+}
+.venn-ops .chip-text {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+  font-size: 14px;
+  fill: var(--ink);
+  pointer-events: none;
+}
+.venn-ops .chip:hover .chip-circle {
+  stroke: var(--primary);
+  stroke-width: 3;
+}
+.venn-ops .chip.in-result .chip-circle {
+  fill: #fef3c7;
+  stroke: #b45309;
+  stroke-width: 3;
+}
+.venn-ops .chip.faded { opacity: 0.28; }
+
+/* ===== Triangle comparison (G2 Eşlik · G3 Benzerlik) ===== */
+.tri-compare {
+  width: 100%;
+  height: 440px;
+  background: #fff;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+}
+.tri-compare text { font-family: inherit; user-select: none; }
+.tri-compare .port-bg {
+  fill: #fbfcff;
+  stroke: #e2e8f0;
+  stroke-width: 2;
+  filter: drop-shadow(0 4px 12px rgba(15,23,42,0.06));
+}
+.tri-compare .port-bg.port-t1     { stroke: rgba(99,102,241,0.40); }
+.tri-compare .port-bg.port-t2     { stroke: rgba(16,185,129,0.40); }
+.tri-compare .port-bg.port-t2-sim { stroke: rgba(245,158,11,0.40); }
+.tri-compare .port-title {
+  font-weight: 800;
+  font-size: 15px;
+  fill: var(--ink);
+  letter-spacing: .5px;
+}
+.tri-compare .port-t1-title     { fill: #4338ca; }
+.tri-compare .port-t2-title     { fill: #047857; }
+.tri-compare .port-t2-sim-title { fill: #b45309; }
+
+/* Verdict badge (ok / warn) */
+.verdict {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: .78rem;
+  letter-spacing: .3px;
+}
+.verdict-ok { background: rgba(16,185,129,0.15); color: #047857; }
+.verdict-warn { background: rgba(239,68,68,0.15); color: #b91c1c; }
+
+/* Comparison table (measurements) */
+.cmp-table {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr auto;
+  gap: 2px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  font-size: .82rem;
+}
+.cmp-row {
+  display: contents;
+}
+.cmp-row > span {
+  background: #fff;
+  padding: 6px 10px;
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+.cmp-row > span:first-child { font-family: inherit; color: var(--ink-soft); font-weight: 600; font-size: .82rem; }
+.cmp-row.header > span {
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-weight: 700;
+  font-family: inherit;
+  font-size: .78rem;
+  letter-spacing: .3px;
+}
+.cmp-row .check-ok { color: var(--ok); font-weight: 800; }
+.cmp-row .check-warn { color: var(--warn); font-weight: 800; }
+.cmp-row .ratio { color: var(--primary); font-weight: 700; }
+
+/* ===== Probability histogram ===== */
+.prob-hist { width: 100%; height: 360px; background: #fff; border-radius: var(--radius-sm); border: 1px solid var(--line); }
+.prob-hist text { font-family: inherit; fill: var(--ink-soft); }
+.prob-hist .bar-exp { fill: var(--primary); transition: y var(--tr), height var(--tr); }
+.prob-hist .bar-theo { fill: rgba(245,158,11,0.25); stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
+.prob-hist .axis { stroke: #cbd5e1; }
+.prob-hist .freq-label {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+  font-size: 11px;
+  fill: var(--primary);
+}
+.prob-hist .cat-label {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+  font-size: 12px;
+  fill: var(--ink);
 }

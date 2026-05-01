@@ -1,6 +1,6 @@
 /**
  * MaarifLab · TYMM Matematik Oyun Alanı
- * Modüller: NumLine, Venn, Function, RefFunc, Analytic, Trig, Triangle, Prob, Bayes, EBOB/EKOK, İstatistik I
+ * Modüller: NumLine, Venn, Function, RefFunc, Analytic, Trig, Triangle, Prob, Bayes, EBOB/EKOK, İstatistik I, Sinüs/Kosinüs (L1·L2)
  *
  * DESIGN PRINCIPLES (zorunlu — her yeni modülde uygulanmalı)
  *
@@ -48,6 +48,7 @@ import { ProbMod } from "./modules/prob.js";
 import { BayesMod } from "./modules/bayes.js";
 import { ArithLabMod } from "./modules/arith-lab.js";
 import { StatsLabMod } from "./modules/stats-lab.js";
+import { TrigLawMod } from "./modules/trig-law.js";
 
 function bootstrap() {
   loadState();
@@ -69,6 +70,7 @@ function bootstrap() {
   BayesMod.init();
   ArithLabMod.init();
   StatsLabMod.init();
+  TrigLawMod.init();
   ["numline", "venn", "function", "reffunc", "trig"].forEach(renderModuleMini);
 }
 

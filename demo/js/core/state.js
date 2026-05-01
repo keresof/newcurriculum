@@ -19,6 +19,7 @@ export const State = {
     bayes:    {},
     arith:    {},
     stats:    {},
+    triglaw:  {},
   },
 };
 

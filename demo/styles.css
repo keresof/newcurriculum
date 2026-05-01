@@ -1232,6 +1232,356 @@ canvas#graph {
   color: var(--ink);
 }
 
+/* —— Sinüs / Kosinüs lab —— */
+.triglaw-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.triglaw-stage-caption {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.triglaw-stage .triglaw-svg {
+  flex: 1;
+  min-height: 220px;
+  width: 100%;
+}
+.triglaw-proof-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.triglaw-proof-actions--split {
+  justify-content: flex-start;
+}
+.triglaw-proof-btn.is-open {
+  border-color: rgba(99, 102, 241, 0.55);
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--primary);
+}
+.triglaw-proof-drawer {
+  margin-top: 10px;
+  padding: 12px 14px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98));
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
+}
+.triglaw-proof-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.triglaw-proof-drawer-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+.triglaw-proof-x {
+  padding: 2px 8px;
+  font-size: 1rem;
+  line-height: 1;
+}
+.triglaw-seg-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.triglaw-seg {
+  flex: 1;
+  min-width: 120px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.triglaw-seg.active {
+  border-color: rgba(99, 102, 241, 0.45);
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary);
+}
+.triglaw-proof-seg-panel {
+  display: none;
+  margin-top: 4px;
+}
+.triglaw-proof-seg-panel.active {
+  display: block;
+}
+.triglaw-sin-law-steps {
+  margin-top: 6px;
+}
+.triglaw-cos-geom-line {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+.triglaw-cos-geom-line.is-active {
+  background: rgba(99, 102, 241, 0.09);
+  border-color: rgba(99, 102, 241, 0.32);
+}
+
+.triglaw-proof-block {
+  margin-top: 4px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.triglaw-proof-h {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.triglaw-proof-lead {
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+.triglaw-step-list {
+  margin: 0;
+  padding-left: 1.15rem;
+}
+.triglaw-step-list li {
+  margin: 7px 0;
+}
+.triglaw-step-k .katex {
+  font-size: 0.94rem !important;
+}
+.triglaw-katex-wrap--compact {
+  margin-top: 6px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
+.triglaw-katex-wrap--compact .katex {
+  font-size: 0.95rem !important;
+}
+.triglaw-proof-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 10px;
+}
+.triglaw-proof-nav-n {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.triglaw-sin-proof-line {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+.triglaw-sin-proof-line.is-active {
+  background: rgba(5, 150, 105, 0.09);
+  border-color: rgba(5, 150, 105, 0.35);
+}
+.triglaw-sin-proof-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+.triglaw-sin-proof-k {
+  flex: 1;
+  min-width: 0;
+}
+.triglaw-sin-proof-k .katex {
+  font-size: 0.9rem !important;
+}
+
+.triglaw-mod-body .triglaw-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.triglaw-panel-stack > .inner-panel {
+  margin: 0;
+}
+.triglaw-sin-readout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+  padding: 10px 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+}
+.triglaw-sin-readout > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.triglaw-sin-readout .lbl {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.triglaw-metric--solo {
+  margin-top: 4px;
+}
+
+.triglaw-katex-wrap {
+  margin-top: 4px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(14, 165, 233, 0.06));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+}
+.triglaw-katex-wrap .katex { font-size: 1rem !important; }
+
+.triglaw-angle-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+.triglaw-angle-strip--single {
+  grid-template-columns: 1fr;
+  max-width: 320px;
+}
+.triglaw-angle-card {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 8px 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+.triglaw-angle-vertex {
+  display: block;
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.triglaw-angle-deg {
+  display: block;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.triglaw-angle-rad {
+  margin-top: 6px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.triglaw-angle-rad .katex { font-size: 0.88rem !important; color: var(--ink-soft); }
+
+.triglaw-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.triglaw-metric {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 14px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.triglaw-metric-lbl {
+  flex: 0 0 100%;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+@media (min-width: 520px) {
+  .triglaw-metric-lbl { flex: 0 0 auto; min-width: 140px; }
+}
+.triglaw-metric-katex {
+  flex: 1;
+  min-width: 0;
+}
+.triglaw-metric-katex .katex { font-size: 1.02rem !important; }
+.triglaw-metric-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.triglaw-tips {
+  margin-top: 10px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.triglaw-svg .triglaw-angle-sector {
+  fill: rgba(129, 140, 248, 0.28);
+  stroke: rgba(99, 102, 241, 0.35);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.triglaw-svg .triglaw-angle-arc {
+  fill: none;
+  stroke: #4f46e5;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.98;
+}
+.triglaw-svg .triglaw-angle-deg-label {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  fill: #312e81;
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 3.5px;
+  paint-order: stroke fill;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+@media (max-width: 520px) {
+  .triglaw-sin-readout {
+    grid-template-columns: 1fr;
+  }
+  .triglaw-angle-strip {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .prob-hist .bar-exp { transition: none; }
   .venn .set-region { transition: none; }

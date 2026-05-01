@@ -88,6 +88,10 @@
           <span class="ix">K</span>
           <span class="ttl"><strong>İstatistik I</strong><span>9–10 · Histogram · kutu <em class="tag-mode explore">keşif</em></span></span>
         </button>
+        <button class="tab" data-tab="triglaw" role="tab">
+          <span class="ix">L</span>
+          <span class="ttl"><strong>Sinüs · Kosinüs</strong><span>10 · SAS üçgen <em class="tag-mode explore">keşif</em></span></span>
+        </button>
       </nav>
 
       <!-- ========== A · Sayı Doğrusu Laboratuvarı (inner tabs) ========== -->
@@ -1040,6 +1044,216 @@
             </p>
             <div class="feedback" id="stats-fb">Veriyi gir ve Uygula’ya bas.</div>
           </div>
+        </div>
+      </section>
+
+      <!-- ========== L · Sinüs / Kosinüs (iç sekmeler: SAS kosinüs | sinüs oranları) ========== -->
+      <section id="mod-triglaw" class="module" role="tabpanel">
+        <div class="mod-header">
+          <div>
+            <h2>Sinüs ve Kosinüs Laboratuvarı · SAS üçgen</h2>
+            <p>
+              <b>L1:</b> formül ve ölçüler üstte; <b>Kanıtlar</b> ile sayısal / koordinat adımlarını açın.
+              <b>L2:</b> <b>Kanıt · sinüs</b> ve <b>Kanıt · alan</b> ayrı çekmeceler; grafik vurgusu alan kanıtıyla eşlenir.
+            </p>
+          </div>
+          <span class="mod-tag">10.4.4 · Sinüs ve kosinüs teoremleri · keşif</span>
+        </div>
+
+        <div class="inner-tabs" role="tablist">
+          <button class="inner-tab active" data-inner="cos-sas" role="tab">
+            <span class="ix-mini">L1</span> Kosinüs (SAS)
+            <em class="tag-mode explore">keşif</em>
+          </button>
+          <button class="inner-tab" data-inner="sin-law" role="tab">
+            <span class="ix-mini">L2</span> Sinüs · çember · alan
+            <em class="tag-mode explore">keşif</em>
+          </button>
+        </div>
+
+        <div class="mod-body triglaw-mod-body">
+          <div class="stage triglaw-stage">
+            <p class="triglaw-stage-caption mono" id="triglaw-stage-caption"></p>
+            <svg class="triglaw-svg" id="triglaw-svg" viewBox="0 0 720 420" preserveAspectRatio="xMidYMid meet" aria-label="SAS üçgen"></svg>
+          </div>
+          <aside class="triglaw-rail">
+            <div class="controls triglaw-shared-controls">
+              <div class="field">
+                <span class="lbl">b = |AC|</span>
+                <input id="triglaw-b" type="range" min="2" max="24" step="1" value="8" />
+                <span class="val mono" id="triglaw-b-v">8</span>
+              </div>
+              <div class="field">
+                <span class="lbl">c = |AB|</span>
+                <input id="triglaw-c" type="range" min="2" max="24" step="1" value="11" />
+                <span class="val mono" id="triglaw-c-v">11</span>
+              </div>
+              <div class="field">
+                <span class="lbl">∠A (verilen)</span>
+                <input id="triglaw-A" type="range" min="10" max="170" step="1" value="60" />
+                <span class="val mono" id="triglaw-A-v">60°</span>
+              </div>
+            </div>
+
+            <div class="triglaw-panel-stack">
+              <div class="inner-panel active" data-inner-panel="cos-sas">
+                <div class="panel">
+                  <div class="target">
+                    <b>Kosinüs:</b> |AC| = b, |AB| = c, verilen <span class="mono">∠A</span>. Grafikte yalnızca bu açı vurgulanır;
+                    <span class="mono">a</span> = |BC| formülle bulunur.
+                  </div>
+                  <div class="katex-wrap triglaw-katex-wrap" id="triglaw-katex" aria-label="Kosinüs teoremi"></div>
+                  <div class="triglaw-proof-actions">
+                    <button
+                      type="button"
+                      class="ghost triglaw-proof-btn"
+                      id="triglaw-cos-proof-toggle"
+                      aria-expanded="false"
+                      aria-controls="triglaw-cos-proof-drawer"
+                    >
+                      Kanıtlar
+                    </button>
+                  </div>
+                  <div id="triglaw-cos-proof-drawer" class="triglaw-proof-drawer" hidden>
+                    <div class="triglaw-proof-drawer-head">
+                      <span class="triglaw-proof-drawer-title">Kosinüs teoremi — kanıt</span>
+                      <button type="button" class="ghost triglaw-proof-x" id="triglaw-cos-proof-close" aria-label="Kapat">✕</button>
+                    </div>
+                    <div class="triglaw-seg-row" role="tablist" aria-label="Kosinüs kanıt türü">
+                      <button type="button" class="triglaw-seg active" data-cos-proof="num" role="tab">Sayısal</button>
+                      <button type="button" class="triglaw-seg" data-cos-proof="geom" role="tab">Koordinat</button>
+                    </div>
+                    <div class="triglaw-proof-seg-panel active" data-cos-proof-panel="num" role="tabpanel">
+                      <p class="triglaw-proof-lead">
+                        Verilen <span class="mono">b, c, A</span> ile formülde yerine koyma (işlem sırası aşağıda güncellenir).
+                      </p>
+                      <ol class="triglaw-step-list" id="triglaw-cos-steps">
+                        <li><div class="triglaw-step-k" id="triglaw-cos-s1"></div></li>
+                        <li><div class="triglaw-step-k" id="triglaw-cos-s2"></div></li>
+                        <li><div class="triglaw-step-k" id="triglaw-cos-s3"></div></li>
+                        <li><div class="triglaw-step-k" id="triglaw-cos-s4"></div></li>
+                        <li><div class="triglaw-step-k" id="triglaw-cos-s5"></div></li>
+                      </ol>
+                    </div>
+                    <div class="triglaw-proof-seg-panel" data-cos-proof-panel="geom" role="tabpanel">
+                      <p class="triglaw-proof-lead">
+                        <span class="mono">A</span> orijinde, <span class="mono">AC</span> eksen üzerinde konumlandırma ile <span class="mono">a²</span> ifadesinin açılımı.
+                      </p>
+                      <div class="triglaw-proof-nav">
+                        <button type="button" class="ghost" id="triglaw-cos-geom-prev">← Önceki</button>
+                        <span class="mono triglaw-proof-nav-n" id="triglaw-cos-geom-n">1 / 4</span>
+                        <button type="button" class="ghost" id="triglaw-cos-geom-next">Sonraki →</button>
+                      </div>
+                      <div id="triglaw-cos-geom-steps" class="triglaw-sin-law-steps"></div>
+                    </div>
+                  </div>
+                  <div class="triglaw-angle-strip triglaw-angle-strip--single">
+                    <div class="triglaw-angle-card">
+                      <span class="triglaw-angle-vertex">Verilen açı · ∠A</span>
+                      <span class="triglaw-angle-deg" id="triglaw-card-A-deg">—</span>
+                      <div class="triglaw-angle-rad" id="triglaw-card-A-rad"></div>
+                    </div>
+                  </div>
+                  <div class="triglaw-metrics">
+                    <div class="triglaw-metric">
+                      <span class="triglaw-metric-lbl">Kenar <span class="mono">a</span> = |BC|</span>
+                      <div class="triglaw-metric-katex" id="triglaw-a-katex"></div>
+                      <span class="triglaw-metric-note" id="triglaw-a-note"></span>
+                    </div>
+                    <div class="triglaw-metric">
+                      <span class="triglaw-metric-lbl"><span class="mono">cos A</span> (formülde kullanılan)</span>
+                      <div class="triglaw-metric-katex" id="triglaw-cos-katex"></div>
+                    </div>
+                  </div>
+                  <div class="triglaw-tips info-card">
+                    <strong>İpucu:</strong> <span class="mono">∠A</span> kaydırdıkça <span class="mono">cos A</span> değişir; 30°, 45°, 60°… gibi açılarda kesir kökleri LaTeX’te tam görünür.
+                  </div>
+                  <p class="teacher-note">
+                    <strong>Sınıfta ~10 dk:</strong> A = 90° iken a² = b² + c² (Pisagor); A &gt; 90° iken cos A negatif olduğundan a² &gt; b² + c² olduğunu gözlemletin.
+                  </p>
+                  <div class="feedback" id="triglaw-fb">b, c ve ∠A kaydırıcılarını kullan.</div>
+                </div>
+              </div>
+
+              <div class="inner-panel" data-inner-panel="sin-law">
+                <div class="panel">
+                  <div class="target">
+                    <b>Grafik:</b> mor üçgenin <b>çevrel çemberi</b> (açıortayların kesişimi · merkez <span class="mono">O</span>, yarıçap <span class="mono">R</span>) ve
+                    <span class="mono">C</span>’den <span class="mono">AB</span>’ye indirilen <b>dik</b> (<span class="mono">h</span>) ile alan formülünü birlikte okuyun.
+                  </div>
+                  <div class="katex-wrap triglaw-katex-wrap" id="triglaw-sin-katex" aria-label="Sinüs teoremi"></div>
+                  <div class="katex-wrap triglaw-katex-wrap triglaw-katex-wrap--compact" id="triglaw-sin-area-katex" aria-label="Sinüs ile alan"></div>
+                  <div class="triglaw-sin-readout" aria-label="Açılar ve oranlar">
+                    <div><span class="lbl">∠A</span><span class="val mono" id="triglaw-sin-angA">—</span></div>
+                    <div><span class="lbl">∠B</span><span class="val mono" id="triglaw-sin-angB">—</span></div>
+                    <div><span class="lbl">∠C</span><span class="val mono" id="triglaw-sin-angC">—</span></div>
+                    <div><span class="lbl">a/sin A</span><span class="val mono" id="triglaw-sin-k1">—</span></div>
+                    <div><span class="lbl">b/sin B</span><span class="val mono" id="triglaw-sin-k2">—</span></div>
+                    <div><span class="lbl">c/sin C</span><span class="val mono" id="triglaw-sin-k3">—</span></div>
+                  </div>
+                  <div class="triglaw-metric triglaw-metric--solo">
+                    <span class="triglaw-metric-lbl">Çevrel çember · <span class="mono">2R</span> (yaklaşık)</span>
+                    <div class="triglaw-metric-katex" id="triglaw-sin-2r-katex"></div>
+                  </div>
+                  <div class="triglaw-proof-actions triglaw-proof-actions--split">
+                    <button
+                      type="button"
+                      class="ghost triglaw-proof-btn"
+                      id="triglaw-sin-law-proof-toggle"
+                      aria-expanded="false"
+                      aria-controls="triglaw-sin-law-proof-drawer"
+                    >
+                      Kanıt · sinüs
+                    </button>
+                    <button
+                      type="button"
+                      class="ghost triglaw-proof-btn"
+                      id="triglaw-sin-area-proof-toggle"
+                      aria-expanded="false"
+                      aria-controls="triglaw-sin-area-proof-drawer"
+                    >
+                      Kanıt · alan
+                    </button>
+                  </div>
+                  <div id="triglaw-sin-law-proof-drawer" class="triglaw-proof-drawer" hidden>
+                    <div class="triglaw-proof-drawer-head">
+                      <span class="triglaw-proof-drawer-title">Sinüs teoremi — çember</span>
+                      <button type="button" class="ghost triglaw-proof-x" id="triglaw-sin-law-proof-close" aria-label="Kapat">✕</button>
+                    </div>
+                    <p class="triglaw-proof-lead">
+                      Aynı çevrel çember yarıçapı <span class="mono">R</span> üzerinden <span class="mono">a / sin A = 2R</span> zinciri.
+                    </p>
+                    <div class="triglaw-proof-nav">
+                      <button type="button" class="ghost" id="triglaw-sin-law-p-prev">← Önceki</button>
+                      <span class="mono triglaw-proof-nav-n" id="triglaw-sin-law-p-n">1 / 4</span>
+                      <button type="button" class="ghost" id="triglaw-sin-law-p-next">Sonraki →</button>
+                    </div>
+                    <div id="triglaw-sin-law-steps" class="triglaw-sin-law-steps"></div>
+                  </div>
+                  <div id="triglaw-sin-area-proof-drawer" class="triglaw-proof-drawer" hidden>
+                    <div class="triglaw-proof-drawer-head">
+                      <span class="triglaw-proof-drawer-title">Alan — dik inme</span>
+                      <button type="button" class="ghost triglaw-proof-x" id="triglaw-sin-area-proof-close" aria-label="Kapat">✕</button>
+                    </div>
+                    <p class="triglaw-proof-lead">
+                      Grafikte <span class="mono">CH</span> ve yarıçap vurgusu bu adımlarla eşlenir; çekmece açıkken <b>Önceki / Sonraki</b> kullanın.
+                    </p>
+                    <div class="triglaw-proof-nav">
+                      <button type="button" class="ghost" id="triglaw-sin-p-prev">← Önceki</button>
+                      <span class="mono triglaw-proof-nav-n" id="triglaw-sin-p-n">1 / 5</span>
+                      <button type="button" class="ghost" id="triglaw-sin-p-next">Sonraki →</button>
+                    </div>
+                    <div class="triglaw-sin-area-steps" id="triglaw-sin-area-steps"></div>
+                  </div>
+                  <div class="triglaw-tips info-card">
+                    <strong>İpucu:</strong> <span class="mono">OA = OB = OC = R</span>; köşe açısı <span class="mono">A</span>’nın gördüğü kiriş <span class="mono">a</span> ile
+                    <span class="mono">a/\sin A = 2R</span> (genişletilmiş sinüs) ilişkisini tahtada da gösterebilirsiniz.
+                  </div>
+                  <div class="feedback" id="triglaw-sin-fb">Oranları izleyin; kanıtları ayrı düğmelerden açın.</div>
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
 

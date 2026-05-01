@@ -11,6 +11,11 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+      crossorigin="anonymous"
+    />
   </head>
   <body>
     <div class="app">
@@ -73,7 +78,15 @@
         </button>
         <button class="tab" data-tab="bayes" role="tab">
           <span class="ix">I</span>
-          <span class="ttl"><strong>Bayes Laboratuvarı</strong><span>10 · Koşullu Olasılık <em class="tag-mode explore">keşif</em></span></span>
+          <span class="ttl"><strong>Bayes Laboratuvarı</strong><span>10 · Bayes <em class="tag-mode explore">keşif</em></span></span>
+        </button>
+        <button class="tab" data-tab="arith" role="tab">
+          <span class="ix">J</span>
+          <span class="ttl"><strong>EBOB · EKOK</strong><span>10 · Bölünme <em class="tag-mode explore">keşif</em></span></span>
+        </button>
+        <button class="tab" data-tab="stats" role="tab">
+          <span class="ix">K</span>
+          <span class="ttl"><strong>İstatistik I</strong><span>9–10 · Histogram · kutu <em class="tag-mode explore">keşif</em></span></span>
         </button>
       </nav>
 
@@ -111,6 +124,10 @@
             </div>
             <div class="panel">
               <div class="target" id="numline-target">Hedef yükleniyor…</div>
+              <p class="teacher-note" id="numline-teacher">
+                <strong>Sınıfta ~10 dk:</strong> Önce köşeli/yuvarlak parantez farkını tahtada tekrarlayın; ardından bu avı açın.
+                <strong>Varyasyon:</strong> Önce yalnızca uçları, sonra yalnızca kapsamı değiştirerek turuncu hedefe yaklaşın.
+              </p>
               <div class="controls">
                 <div class="field">
                   <span class="lbl">Sol uç</span>
@@ -168,6 +185,9 @@
             </div>
             <div class="panel">
               <div class="target" id="aops-target">İki aralık seç ve üzerlerinde küme işlemi uygula.</div>
+              <p class="teacher-note" id="aops-teacher">
+                <strong>Sınıfta ~10 dk:</strong> Aynı işlemi hem aralık hem küme gösterimiyle okutun; tümlemede evren <b>E = ℝ</b> olduğunu hatırlatın.
+              </p>
               <div class="controls">
                 <div class="field">
                   <span class="lbl">İşlem</span>
@@ -240,6 +260,11 @@
               <div class="info-card" id="venn-info">
                 <b>İpucu:</b> Her küme bir üsttekinin alt kümesidir. Örn. 5 ∈ ℕ ⊂ ℤ ⊂ ℚ ⊂ ℝ. Ama √2 irrasyoneldir — yalnızca ℝ'ye ait, ℚ'ya ait değildir.
               </div>
+              <p class="teacher-note" id="venn-teacher">
+                <strong>Sınıfta ~10 dk:</strong> «En dar küme» kuralını tahtada örnekleyin; irrasyoneller için ℝ dış halkasındaki etikete dikkat çekin.
+              </p>
+              <label class="poe-explain-lbl" for="venn-explain">Bu sayıyı nasıl ayırt ettin? (isteğe bağlı)</label>
+              <textarea id="venn-explain" class="poe-explain" rows="2" maxlength="1200" placeholder="Örn: ... tam sayı olduğu için ℤ; en dar küme ℕ çünkü ..."></textarea>
               <div class="mini" id="venn-mini">
                 <div class="cell"><div class="k">Görev</div><div class="v" data-k="task">1</div></div>
                 <div class="cell"><div class="k">Doğru</div><div class="v" data-k="ok">0</div></div>
@@ -322,9 +347,27 @@
               <canvas id="graph"></canvas>
             </div>
           </div>
-          <div class="panel">
-            <div class="target" id="function-target">Hedef yükleniyor…</div>
-            <div class="controls">
+            <div class="panel">
+              <div class="target" id="function-target">Hedef yükleniyor…</div>
+              <p class="teacher-note" id="fn-teacher">
+                <strong>Sınıfta ~10 dk:</strong> İki noktadan eğimi Δy/Δx ile hesaplatın; <code>b</code> için <code>y(0)</code> sezgisini kullanın.
+                <strong>Varyasyon:</strong> Önce yalnızca <code>a</code>, sonra yalnızca <code>b</code> — grafiğin döndüğünü gözlemletin.
+              </p>
+              <div class="poe-card poe-compact">
+                <div class="poe-card-title">Tahmin · eğim</div>
+                <p class="poe-hint">Hedef doğrunun <b>eğimini</b> (Δy/Δx) tahmin et; kaydırıcıları oynattıktan sonra karşılaştır.</p>
+                <div class="poe-row">
+                  <div class="field" style="flex:1;margin:0;">
+                    <span class="lbl" id="fn-pm-lbl">Tahmini eğim</span>
+                    <input id="fn-predict-m" class="val-input" type="number" step="0.1" placeholder="örn. 1.5" aria-labelledby="fn-pm-lbl" />
+                  </div>
+                  <button type="button" class="primary" id="fn-compare-predict">Karşılaştır</button>
+                </div>
+                <div class="feedback poe-feedback" id="fn-poe-fb" aria-live="polite"></div>
+                <label class="poe-explain-lbl" for="fn-explain">Kısa açıklama (isteğe bağlı)</label>
+                <textarea id="fn-explain" class="poe-explain" rows="2" maxlength="1200" placeholder="Örn: Eğim ... çünkü iki nokta ...; b ise kesim ..."></textarea>
+              </div>
+              <div class="controls">
               <div class="field">
                 <span class="lbl">a (eğim)</span>
                 <input id="a-slider" type="range" min="-5" max="5" step="0.1" value="1" />
@@ -369,6 +412,10 @@
           </div>
           <div class="panel">
             <div class="target" id="ref-target">Hedef yükleniyor…</div>
+            <p class="teacher-note" id="ref-teacher">
+              <strong>Sınıfta ~10 dk:</strong> Önce <code>f</code> seçiminin şekli, sonra <code>a</code> ile ölçek, <code>r</code> ile yatay kayma, <code>k</code> ile dikey kayma tartışılsın.
+              <strong>Varyasyon:</strong> Tek parametre oynatılıp diğerleri sabit tutulsun (variation turu).
+            </p>
             <div class="controls">
               <div class="field">
                 <span class="lbl">Referans f(x)</span>
@@ -402,17 +449,20 @@
               <div class="cell"><div class="k">Doğru</div><div class="v" data-k="ok">0</div></div>
               <div class="cell"><div class="k">Doğruluk</div><div class="v" data-k="acc">—</div></div>
             </div>
-            <div class="readout" id="ref-qualities" style="grid-template-columns: 1fr;">
-              <div><span class="lbl">Tanım kümesi</span><span class="val mono" id="rq-dom">ℝ</span></div>
-              <div><span class="lbl">Görüntü kümesi</span><span class="val mono" id="rq-range">ℝ</span></div>
-              <div><span class="lbl">Artan/Azalan</span><span class="val mono" id="rq-mono">artan (ℝ)</span></div>
-              <div><span class="lbl">Sıfırı (f(x)=0)</span><span class="val mono" id="rq-zero">—</span></div>
-              <div><span class="lbl">y-kesim f(0)</span><span class="val mono" id="rq-y0">—</span></div>
-              <div><span class="lbl">Ekstremum</span><span class="val mono" id="rq-ext">yok</span></div>
-              <div><span class="lbl">Simetri</span><span class="val mono" id="rq-parity">tek</span></div>
-              <div><span class="lbl">Bire-birlik</span><span class="val mono" id="rq-11">evet</span></div>
-              <div><span class="lbl">Asimptotlar</span><span class="val mono" id="rq-asym">yok</span></div>
-            </div>
+            <details class="panel-details" id="ref-details-adv">
+              <summary>Gelişmiş · fonksiyon nitelikleri (tanım, görüntü, monotonluk…)</summary>
+              <div class="readout readout-nested" id="ref-qualities" style="grid-template-columns: 1fr;">
+                <div><span class="lbl">Tanım kümesi</span><span class="val mono" id="rq-dom">ℝ</span></div>
+                <div><span class="lbl">Görüntü kümesi</span><span class="val mono" id="rq-range">ℝ</span></div>
+                <div><span class="lbl">Artan/Azalan</span><span class="val mono" id="rq-mono">artan (ℝ)</span></div>
+                <div><span class="lbl">Sıfırı (f(x)=0)</span><span class="val mono" id="rq-zero">—</span></div>
+                <div><span class="lbl">y-kesim f(0)</span><span class="val mono" id="rq-y0">—</span></div>
+                <div><span class="lbl">Ekstremum</span><span class="val mono" id="rq-ext">yok</span></div>
+                <div><span class="lbl">Simetri</span><span class="val mono" id="rq-parity">tek</span></div>
+                <div><span class="lbl">Bire-birlik</span><span class="val mono" id="rq-11">evet</span></div>
+                <div><span class="lbl">Asimptotlar</span><span class="val mono" id="rq-asym">yok</span></div>
+              </div>
+            </details>
             <div class="actions">
               <button class="primary" id="ref-check">Hedefi Yakala</button>
               <button class="ghost" id="ref-new">Yeni Görev</button>
@@ -454,7 +504,10 @@
                 <input class="val-input" id="an-ratio-num" type="number" step="0.1" min="0.1" max="5" value="1.0" />
               </div>
             </div>
-            <div class="readout" id="an-readout">
+            <p class="teacher-note" id="an-teacher">
+              <strong>Sınıfta ~10 dk:</strong> Önce yatay/dikey doğrular için eğimin tanımsızlığını; sonra bölünen nokta için oran sezgisini tartışın.
+            </p>
+            <div class="readout" id="an-readout" aria-live="polite">
               <div><span class="lbl">A</span><span class="val mono" id="an-a">(-4, 2)</span></div>
               <div><span class="lbl">B</span><span class="val mono" id="an-b">(4, -2)</span></div>
               <div><span class="lbl">|AB|</span><span class="val mono" id="an-d">—</span></div>
@@ -463,6 +516,12 @@
               <div><span class="lbl">Eğim açısı</span><span class="val mono" id="an-angle">—</span></div>
               <div><span class="lbl">Denklem</span><span class="val mono" id="an-eq">y = …</span></div>
               <div><span class="lbl">Bölen P</span><span class="val mono" id="an-div">(—)</span></div>
+            </div>
+            <div class="explore-check" id="an-checklist">
+              <div class="explore-check-title">Keşif kontrol listesi</div>
+              <label><input type="checkbox" data-an-check="1" /> A ve B’yi sürükleyerek <b>|AB|</b> ve <b>orta nokta M</b>’yi gözlemledim.</label>
+              <label><input type="checkbox" data-an-check="2" /> <b>Eğim m</b> ile <b>eğim açısı</b> arasındaki farkı (dik doğru) denedim.</label>
+              <label><input type="checkbox" data-an-check="3" /> <b>k</b> oranını değiştirip bölen nokta <b>P</b>’nin AB üzerinde kaydığını gördüm.</label>
             </div>
             <div class="feedback" id="an-fb" style="color:var(--ink-soft);font-weight:500;">Formül: |AB| = √((x₂−x₁)² + (y₂−y₁)²) · m = (y₂−y₁)/(x₂−x₁) · P = (m·A + k·B)/(k+m)</div>
           </div>
@@ -490,6 +549,9 @@
           </div>
           <div class="panel">
             <div class="target" id="trig-target">Hedef yükleniyor…</div>
+            <p class="teacher-note" id="trig-teacher">
+              <strong>Sınıfta ~10 dk:</strong> Birim çemberde (cos, sin) ve grafikteki dikey çizgiyi eş zamanlı okuyun; 90°/270° civarında tan için asimptotu vurgulayın.
+            </p>
             <div class="controls">
               <div class="field">
                 <span class="lbl">θ (derece)</span>
@@ -502,14 +564,21 @@
                 <span class="val mono" id="trig-rad">π/6</span>
               </div>
             </div>
-            <div class="readout" id="trig-readout">
+            <div class="readout" id="trig-readout" aria-live="polite">
               <div><span class="lbl">sin θ</span><span class="val mono" id="trig-sin">0.500</span></div>
               <div><span class="lbl">cos θ</span><span class="val mono" id="trig-cos">0.866</span></div>
               <div><span class="lbl">tan θ</span><span class="val mono" id="trig-tan">0.577</span></div>
-              <div><span class="lbl">cot θ</span><span class="val mono" id="trig-cot">1.732</span></div>
-              <div><span class="lbl">sin²+cos²</span><span class="val mono" id="trig-pyt">1.000</span></div>
-              <div><span class="lbl">Referans</span><span class="val mono" id="trig-ref">30°</span></div>
             </div>
+            <details class="panel-details" id="trig-details-extra">
+              <summary>Ek okumalar: cot θ, sin²+cos², referans açı</summary>
+              <div class="readout readout-nested">
+                <div><span class="lbl">cot θ</span><span class="val mono" id="trig-cot">1.732</span></div>
+                <div><span class="lbl">sin²+cos²</span><span class="val mono" id="trig-pyt">1.000</span></div>
+                <div><span class="lbl">Referans</span><span class="val mono" id="trig-ref">30°</span></div>
+              </div>
+            </details>
+            <label class="poe-explain-lbl" for="trig-explain" style="margin-top:10px;">Kısa açıklama (isteğe bağlı)</label>
+            <textarea id="trig-explain" class="poe-explain" rows="2" maxlength="1200" placeholder="Örn: II. kadranda cos negatif çünkü ...; referans açı ..."></textarea>
             <div class="mini" id="trig-mini">
               <div class="cell"><div class="k">Görev</div><div class="v" data-k="task">1</div></div>
               <div class="cell"><div class="k">Doğru</div><div class="v" data-k="ok">0</div></div>
@@ -561,6 +630,9 @@
             </div>
             <div class="panel">
               <div class="target" id="triangle-target">Hedef: <b>iç açı toplamı = 180°</b> her zaman doğrudur. Köşeleri sürükle ve kanıtla.</div>
+              <p class="teacher-note" id="tri-exp-teacher">
+                <strong>Sınıfta ~10 dk:</strong> Üçgen eşitsizliği ve iç açı toplamını birlikte okuyun; degener üçgen (doğru üzerinde) sınırına yaklaşmayı deneyin.
+              </p>
               <div class="readout" id="triangle-readout">
                 <div><span class="lbl">α (A)</span><span class="val mono" id="tri-a">60°</span></div>
                 <div><span class="lbl">β (B)</span><span class="val mono" id="tri-b">60°</span></div>
@@ -610,6 +682,9 @@
                 <div id="cong-inputs"></div>
               </div>
               <div class="info-card" id="cong-info">KKK: Üç kenarı eşit olan üçgenler eşittir.</div>
+              <div class="info-card" id="cong-contrast" style="margin-top:8px;border-color:rgba(245,158,11,0.25);">
+                <b>Kontrast:</b> Eşlikte <b>boy</b> sabit (üst üste bindirince tam örtüşür); benzerlikte ise <b>şekil + açı</b> aynı, <b>kenarlar orantılı</b> olabilir (G3 sekmesi).
+              </div>
               <div class="cmp-table" id="cong-table">
                 <div class="cmp-row header"><span></span><span>T₁</span><span>T₂</span><span>eşit?</span></div>
               </div>
@@ -654,6 +729,9 @@
                 </div>
               </div>
               <div class="info-card" id="sim-info">AA: İki açı eşit olan üçgenler benzerdir; kenarlar ölçek faktörü k ile orantılı.</div>
+              <div class="info-card" id="sim-contrast" style="margin-top:8px;border-color:rgba(16,185,129,0.22);">
+                <b>Kontrast:</b> Benzerlikte oranlar sabit (<code>k</code>); eşlikte oran tam olarak <b>1</b> olmalıdır. KKA’da iki farklı üçgen (ikizkenar belirsizliği) olabileceğini G2’de «Alternatif» ile gösterin.
+              </div>
               <div class="cmp-table" id="sim-table">
                 <div class="cmp-row header"><span></span><span>T₁</span><span>T₂</span><span>oran T₂/T₁</span></div>
               </div>
@@ -709,6 +787,16 @@
               <div class="cell"><div class="k">Ortalama</div><div class="v" data-k="mean">—</div></div>
               <div class="cell"><div class="k">Mod</div><div class="v" data-k="mode">—</div></div>
             </div>
+            <div class="mini-ext" id="prob-tv-row"><span class="k">TV ayrımı</span><span class="v mono" id="prob-tv" title="Toplam varyasyon: deneysel vs teorik (0=aynı)">—</span></div>
+            <div class="explore-check" id="prob-checklist">
+              <div class="explore-check-title">Keşif kontrol listesi</div>
+              <label><input type="checkbox" data-prob-check="1" /> Tek zar ve iki zar modlarını karşılaştırdım (şekil: düz vs üçgen).</label>
+              <label><input type="checkbox" data-prob-check="2" /> Atış sayısını artırınca ortalamanın beklenen değere yaklaştığını gözlemledim.</label>
+              <label><input type="checkbox" data-prob-check="3" /> TV ayrımının küçüldüğünü (teoriye yaklaşma) kontrol ettim.</label>
+            </div>
+            <p class="teacher-note" id="prob-teacher">
+              <strong>Sınıfta ~10 dk:</strong> Önce 20–30 atışta «gürültüyü», sonra 2000+ atışta düzeni karşılaştırın. TV ayrımı 0’a yaklaştıkça model uyumu güçlenir.
+            </p>
             <div class="actions">
               <button class="primary" id="run-sim">N atış yap</button>
               <button class="ghost" id="add-one">Tek atış</button>
@@ -743,6 +831,11 @@
               <b>P(H | +)</b> = (Duyarlılık × Yaygınlık) / Toplam Pozitif Oranı.
               Kaydırıcılarla parametreleri değiştir, alan modelinde dağılımı ve sayısal sonucu canlı gör.
             </div>
+            <div class="info-card" id="bayes-poe-intro">
+              <b>Tahmin → Gözlem → Açıkla (POE):</b> Önce yüzde olarak tahmin et, kaydırıcılarla modeli gözlemle, sonra tahminini karşılaştır.
+              Son olarak kendi cümlelerinle açıkla — bu adım öğrenmeyi pekiştirir.
+            </div>
+            <div class="katex-wrap" id="bayes-katex-host" aria-label="Bayes formülü"></div>
             <div class="controls">
               <div class="field">
                 <span class="lbl">Yaygınlık P(H)</span>
@@ -766,7 +859,186 @@
               <div><span class="lbl">P(H | −)</span><span class="val mono" id="bayes-pnv">0.06%</span></div>
               <div><span class="lbl">Toplam P(+)</span><span class="val mono" id="bayes-tot">10.85%</span></div>
             </div>
+            <div class="poe-card">
+              <div class="poe-card-title">Tahminini karşılaştır</div>
+              <p class="poe-hint">
+                Pozitif test alan birinin <b>gerçekten hasta</b> olma olasılığı
+                <span class="mono">P(H&nbsp;|&nbsp;+)</span> için bir yüzde tahmini gir (0–100).
+              </p>
+              <div class="poe-row">
+                <div class="field" style="flex: 1; margin: 0;">
+                  <span class="lbl" id="bayes-predict-lbl">Tahmin (%)</span>
+                  <input
+                    id="bayes-predict"
+                    class="val-input"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    placeholder="örn. 50"
+                    inputmode="decimal"
+                    aria-labelledby="bayes-predict-lbl"
+                  />
+                </div>
+                <button type="button" class="primary" id="bayes-compare-predict">Karşılaştır</button>
+              </div>
+              <div class="feedback poe-feedback" id="bayes-poe-fb" aria-live="polite"></div>
+              <label class="poe-explain-lbl" for="bayes-explain">Kendi cümlelerinle açıkla (isteğe bağlı)</label>
+              <textarea
+                id="bayes-explain"
+                class="poe-explain"
+                rows="3"
+                maxlength="2000"
+                placeholder="Örn: Tahminim ... çünkü yaygınlık ...; yanlış pozitifler ...; payda P(+) ..."
+                aria-describedby="bayes-poe-intro"
+              ></textarea>
+            </div>
             <div class="feedback" id="bayes-fb">Şaşırtıcı: yaygın olmayan hastalıklarda yüksek duyarlılığa rağmen pozitif sonuç çoğu zaman yanlış pozitif olabilir.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== J · EBOB / EKOK (10. sınıf · Sayılar) ========== -->
+      <section id="mod-arith" class="module" role="tabpanel">
+        <div class="mod-header">
+          <div>
+            <h2>Bölünme Laboratuvarı · EBOB ve EKOK</h2>
+            <p>
+              İki doğal sayının asal çarpan ayrışımını yan yana gör; ortak üsler <b>EBOB</b>u, birleşik üsler <b>EKOK</b>u verir.
+              İlişki: <span class="mono">EBOB(a,b) × EKOK(a,b) = a × b</span> — <b>sayı kutusu</b> veya <b>kaydırıcı</b> ile ayarla; büyük sayıları kutuya yaz.
+            </p>
+          </div>
+          <span class="mod-tag">10.1.1–2 · Asal çarpanlar · EBOB · EKOK</span>
+        </div>
+        <div class="mod-body">
+          <div class="stage">
+            <svg class="arith-svg" id="arith-svg" aria-label="Asal çarpan bantları"></svg>
+          </div>
+          <div class="panel">
+            <div class="target">
+              <b>Keşif:</b> Aynı asal için üslerden küçük olan EBOB’a, büyük olan EKOK’a girer. Aralarında asal çiftlerde ortak bant boş kalır (EBOB = 1).
+            </div>
+            <div class="controls">
+              <div class="arith-controls-inner">
+                <div class="arith-pair">
+                  <label class="arith-label" for="arith-a-in">a</label>
+                  <input
+                    id="arith-a-in"
+                    class="arith-num-input"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    spellcheck="false"
+                    value="36"
+                  />
+                  <div class="arith-slide-row">
+                    <input
+                      id="arith-a-slide"
+                      type="range"
+                      min="0"
+                      max="2000"
+                      step="1"
+                      value="400"
+                      aria-label="a için logaritmik hızlı seçim"
+                    />
+                  </div>
+                </div>
+                <div class="arith-pair">
+                  <label class="arith-label" for="arith-b-in">b</label>
+                  <input
+                    id="arith-b-in"
+                    class="arith-num-input"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    spellcheck="false"
+                    value="48"
+                  />
+                  <div class="arith-slide-row">
+                    <input
+                      id="arith-b-slide"
+                      type="range"
+                      min="0"
+                      max="2000"
+                      step="1"
+                      value="415"
+                      aria-label="b için logaritmik hızlı seçim"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="arith-hint" id="arith-hint">
+              <strong>Sayı kutusu:</strong> 2 ile 9.000.000 arası tam sayı (boşluk/nokta binlik ayırıcı olabilir). Enter, alan dışına tıklama veya «Uygula».
+              <strong>Kaydırıcı:</strong> 2’den 9 milyona kadar <em>logaritmik</em> hızlı seçim — kutudaki sayı ile senkron kalır.
+            </p>
+            <div class="info-card mono" id="arith-eq-a" style="font-size:0.88rem;">36 = 2² × 3²</div>
+            <div class="info-card mono" id="arith-eq-b" style="font-size:0.88rem;">48 = 2⁴ × 3</div>
+            <div class="cmp-table" style="margin-top:4px;">
+              <div class="cmp-row header"><span></span><span>Değer</span></div>
+              <div class="cmp-row"><span>EBOB(a, b)</span><span class="mono" id="arith-gcd">12</span></div>
+              <div class="cmp-row"><span>EKOK(a, b)</span><span class="mono" id="arith-lcm">144</span></div>
+              <div class="cmp-row"><span>a × b</span><span class="mono" id="arith-prod">1728</span></div>
+              <div class="cmp-row"><span>EBOB × EKOK</span><span class="mono" id="arith-check">1728</span></div>
+            </div>
+            <p class="teacher-note">
+              <strong>Sınıfta ~8 dk:</strong> Önce küçük çiftler (12, 18), sonra aralarında asal (15, 28); son olarak a = b ve a | b durumlarını tartışın.
+            </p>
+            <div class="actions">
+              <button type="button" class="primary" id="arith-apply">Uygula</button>
+              <button type="button" class="ghost" id="arith-rand">Rastgele çift</button>
+            </div>
+            <div class="feedback" id="arith-fb">EBOB × EKOK = a × b ilişkisini sayılarla doğrula.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== K · İstatistik I (histogram + kutu) ========== -->
+      <section id="mod-stats" class="module" role="tabpanel">
+        <div class="mod-header">
+          <div>
+            <h2>İstatistik Laboratuvarı I · Tek nicel veri</h2>
+            <p>
+              Bir veri listesi gir; <b>histogram</b> ile dağılımı, <b>kutu grafiği</b> ile çeyrekler ve medyanı gör.
+              Kaydırıcı ile sınıf sayısını değiştir — aynı veri, farklı çözünürlük.
+            </p>
+          </div>
+          <span class="mod-tag">MAT.9.6.1 · 10.6.1 · nicel dağılım · keşif</span>
+        </div>
+        <div class="mod-body">
+          <div class="stage">
+            <svg class="stats-svg" id="stats-svg" aria-label="Histogram ve kutu grafiği"></svg>
+          </div>
+          <div class="panel">
+            <div class="target">
+              <b>Keşif:</b> Çarpık dağılımda medyan ortalamadan farklılaşır; IQR kutu yüksekliğini verir. Ctrl+Enter ile veriyi uygula.
+            </div>
+            <label class="lbl" for="stats-data">Veri listesi</label>
+            <textarea id="stats-data" class="stats-data" rows="5" spellcheck="false" placeholder="Örn: 12, 15, 18, 20 …"></textarea>
+            <div class="controls">
+              <div class="field">
+                <span class="lbl">Histogram sınıf sayısı</span>
+                <input id="stats-bins" type="range" min="5" max="40" step="1" value="12" />
+                <span class="val mono" id="stats-bins-val">12</span>
+              </div>
+            </div>
+            <div class="readout" id="stats-readout">
+              <div><span class="lbl">Ortalama</span><span class="val mono" id="stats-mean">—</span></div>
+              <div><span class="lbl">Medyan</span><span class="val mono" id="stats-median">—</span></div>
+              <div><span class="lbl">Std. sapma (pop.)</span><span class="val mono" id="stats-sd">—</span></div>
+              <div><span class="lbl">IQR</span><span class="val mono" id="stats-iqr">—</span></div>
+              <div><span class="lbl">n</span><span class="val mono" id="stats-n">0</span></div>
+            </div>
+            <div class="actions" style="flex-wrap: wrap; gap: 8px;">
+              <button type="button" class="primary" id="stats-apply">Uygula</button>
+              <button type="button" class="ghost" id="stats-ex-sym">Örnek · simetrik</button>
+              <button type="button" class="ghost" id="stats-ex-skew">Örnek · çarpık</button>
+              <button type="button" class="ghost" id="stats-ex-rand">Rastgele örneklem</button>
+            </div>
+            <p class="teacher-note">
+              <strong>Sınıfta ~12 dk:</strong> Önce sınıf sayısını 8 ve 24 yapıp aynı veride çubukların nasıl birleştiğini tartışın; sonra kutu grafiğinde aykırı değer ekleyin (ör. tek büyük sayı).
+            </p>
+            <div class="feedback" id="stats-fb">Veriyi gir ve Uygula’ya bas.</div>
           </div>
         </div>
       </section>
@@ -778,6 +1050,10 @@
 
     <div class="toast-host" id="toast-host" aria-live="polite"></div>
 
-    <script src="./app.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"
+      crossorigin="anonymous"
+    ></script>
+    <script type="module" src="./js/main.js"></script>
   </body>
 </html>

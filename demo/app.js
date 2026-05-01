@@ -1,3 +1,7 @@
+// NOT: Canlı uygulama girişi artık ./js/main.js (ES modülleri). Bu dosya yalnızca
+// scripts/split_app.py ile demo/js/modules/*.js üretmek için tutulur; düzenleme
+// yapılacaksa önce modülleri güncelleyin veya buradan split sonrası taşıyın.
+//
 // MaarifLab · TYMM Matematik Oyun Alanı
 // Modüller: NumLine, Venn (Classify + Ops), Function, RefFunc, Analytic, Trig, Triangle, Probability, Bayes
 //
@@ -48,6 +52,20 @@ const setAttrs = (el, attrs) => {
 };
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function prefersReducedMotion() {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    return false;
+  }
+}
+/** Kısa süreli bağlantılı vurgu (kaydırıcı ↔ denklem / okuma). */
+function flashHighlight(el, cls = "link-hl", ms = 820) {
+  if (!el || prefersReducedMotion()) return;
+  el.classList.add(cls);
+  setTimeout(() => el.classList.remove(cls), ms);
+}
 
 const State = {
   score: 0,
@@ -130,7 +148,7 @@ function recordAttempt(modKey, isOk, pointsIfOk = 10) {
   saveState();
 }
 function pulse(el) {
-  if (!el || !el.animate) return;
+  if (!el || !el.animate || prefersReducedMotion()) return;
   el.animate(
     [{ transform: "scale(1)" }, { transform: "scale(1.18)" }, { transform: "scale(1)" }],
     { duration: 380, easing: "cubic-bezier(.2,.7,.2,1)" }
@@ -422,7 +440,16 @@ const NumLine = (() => {
       if (user.b !== target.b) diffs.push("sağ uç");
       if (user.leftClosed  !== target.leftClosed)  diffs.push("sol kapsam");
       if (user.rightClosed !== target.rightClosed) diffs.push("sağ kapsam");
-      fb.textContent = `Eksik: ${diffs.join(", ")}.`;
+      let msg = `Eksik: ${diffs.join(", ")}.`;
+      if (user.leftClosed !== target.leftClosed || user.rightClosed !== target.rightClosed) {
+        msg +=
+          " Köşeli [ ] «uç dahil», yuvarlak ( ) «uç hariç» demektir — uçtaki daireye tıklayarak değiştir.";
+      }
+      if (user.a === target.b && user.b === target.a && user.leftClosed === target.rightClosed && user.rightClosed === target.leftClosed) {
+        msg =
+          "Aralığın uç değerleri hedefle aynı ama sol/saç ve kapsam eşleşmesi ters: sol kaydırıcı sol uç, sağ kaydırıcı sağ uç olacak şekilde ayarla.";
+      }
+      fb.textContent = msg;
       fb.className = "feedback warn";
       toast("Tam uymadı, tekrar dene", "warn");
       recordAttempt("numline", false);
@@ -885,7 +912,17 @@ const VennMod = (() => {
       recordAttempt("venn", true, 10);
       setTimeout(newTask, 900);
     } else {
-      fb.innerHTML = `Değil. ${target.label} ∈ <b>${CAT_LABELS[target.cat]}</b> (sen ${CAT_LABELS[clickedCat]}'a tıkladın). Tekrar dene.`;
+      const order = ["N", "Z", "Q", "I"];
+      const ti = order.indexOf(target.cat);
+      const ci = order.indexOf(clickedCat);
+      let extra = "";
+      if (ci > ti) extra = " Daha geniş bir kümenin bölgesine tıkladın — hedef «en dar» kümedir; iç halkalara yaklaş.";
+      else if (ci < ti) extra = " Daha dar bir bölge seçtin; sayı seçilen kümede değilse dış halkalara genişle.";
+      if (target.cat === "I" && clickedCat === "Q")
+        extra = " √2, π gibi sayılar rasyonel görünse de rasyonel değildir; irrasyoneller ℝ içinde ℚ dışındadır (dış halkadaki irrasyonel bölge).";
+      if (target.cat === "N" && clickedCat === "Z")
+        extra = " Doğal sayılar tam sayıların içindedir; bu sayı için en dar etiket ℕ — en içteki halka.";
+      fb.innerHTML = `Değil. ${target.label} ∈ <b>${CAT_LABELS[target.cat]}</b> (sen ${CAT_LABELS[clickedCat]} seçtin).${extra}`;
       fb.className = "feedback warn";
       recordAttempt("venn", false);
     }
@@ -1303,7 +1340,7 @@ const FunctionMod = (() => {
   function drawTarget() {
     if (!target) return;
     const t = Date.now() / 400;
-    const pulseR = 8 + Math.sin(t) * 2;
+    const pulseR = prefersReducedMotion() ? 8 : 8 + Math.sin(t) * 2;
     [[target.x1, target.y1], [target.x2, target.y2]].forEach(([x, y]) => {
       const { px, py } = toPx(x, y);
       ctx.beginPath(); ctx.arc(px, py, pulseR + 4, 0, Math.PI * 2);
@@ -1381,6 +1418,11 @@ const FunctionMod = (() => {
       `Hedef: Doğru <b>(${x1}, ${y1})</b> ve <b>(${x2}, ${y2})</b> noktalarından geçsin.`;
     $("#function-fb").textContent = "";
     $("#function-fb").className = "feedback";
+    const poe = $("#fn-poe-fb");
+    if (poe) {
+      poe.textContent = "";
+      poe.className = "feedback poe-feedback";
+    }
     renderModuleMini("function");
   }
   function updateLabels() {
@@ -1390,6 +1432,30 @@ const FunctionMod = (() => {
     if (document.activeElement?.id !== "b-num") $("#b-num").value = b.toFixed(1);
     const sign = b >= 0 ? "+" : "−";
     $("#eq").textContent = `y = ${a.toFixed(1)}·x ${sign} ${Math.abs(b).toFixed(1)}`;
+    flashHighlight($("#eq"));
+  }
+  function comparePredSlope() {
+    if (!target) return;
+    const raw = ($("#fn-predict-m")?.value || "").trim().replace(",", ".");
+    const pred = parseFloat(raw);
+    if (!Number.isFinite(pred)) {
+      toast("Geçerli bir eğim (sayı) gir.", "warn");
+      return;
+    }
+    const trueM = (target.y2 - target.y1) / (target.x2 - target.x1);
+    const d = Math.abs(pred - trueM);
+    const fb = $("#fn-poe-fb");
+    if (!fb) return;
+    if (d < 0.2) {
+      fb.className = "feedback poe-feedback ok";
+      fb.textContent = `Çok yakın! Gerçek Δy/Δx ≈ ${trueM.toFixed(2)}, tahminin ${pred.toFixed(2)}.`;
+    } else if (Math.abs(pred - trueM) > 2 && Math.abs(pred) < 0.5) {
+      fb.className = "feedback poe-feedback warn";
+      fb.textContent = `Eğim çok küçük tahmin edilmiş. Hedef noktalar (${target.x1},${target.y1}) ve (${target.x2},${target.y2}) ile Δy/Δx ≈ ${trueM.toFixed(2)}.`;
+    } else {
+      fb.className = "feedback poe-feedback warn";
+      fb.textContent = `Tahmin ${pred.toFixed(2)}; gerçek eğim ≈ ${trueM.toFixed(2)} (fark ${d.toFixed(2)}). İki hedef noktayı kullan.`;
+    }
   }
   function check() {
     const { a, b } = readSliders();
@@ -1406,8 +1472,16 @@ const FunctionMod = (() => {
       fb.className = "feedback warn";
       recordAttempt("function", false);
     } else {
-      const slope = ((target.y2 - target.y1)/(target.x2 - target.x1)).toFixed(1);
-      fb.textContent = `Eğim Δy/Δx = ${slope}. Tekrar dene.`;
+      const trueM = (target.y2 - target.y1) / (target.x2 - target.x1);
+      const bIntercept = target.y1 - trueM * target.x1;
+      if (Math.abs(a - trueM) < 0.35 && Math.abs(b - bIntercept) > 0.8) {
+        fb.textContent = `Eğim fikri doğruya yakın (Δy/Δx≈${trueM.toFixed(1)}), ama kesim b uyuşmuyor. Bir noktayı doğruya yerleştir: b = y − m·x.`;
+      } else if (Math.abs(b - bIntercept) < 0.5 && Math.abs(a - trueM) > 0.6) {
+        fb.textContent = `Kesim b yakın görünüyor; eğimi iki noktadan yeniden hesapla: m = (y₂−y₁)/(x₂−x₁) = ${trueM.toFixed(2)}.`;
+      } else {
+        const slope = trueM.toFixed(1);
+        fb.textContent = `Eğim Δy/Δx = ${slope}. İki turuncu noktayı aynı doğruya oturt.`;
+      }
       fb.className = "feedback warn";
       recordAttempt("function", false);
     }
@@ -1424,6 +1498,8 @@ const FunctionMod = (() => {
     $("#function-check").addEventListener("click", check);
     $("#function-new").addEventListener("click", newTask);
     $("#function-hint").addEventListener("click", hint);
+    const cmp = $("#fn-compare-predict");
+    if (cmp) cmp.addEventListener("click", comparePredSlope);
     window.addEventListener("resize", resize);
     newTask();
     updateLabels();
@@ -1553,6 +1629,7 @@ const RefFuncMod = (() => {
     $("#ref-eq").textContent = `g(x) = ${aStr}${baseLabel}${kStr}`;
     // Nitel özellikler panelini güncelle
     updateQualities(c);
+    flashHighlight($("#ref-eq"));
   }
 
   // Dönüşüm uygulanmış g(x) = a·f(x−r) + k için nitel özellikleri hesapla.
@@ -1771,13 +1848,13 @@ const RefFuncMod = (() => {
     }
     const rmse = Math.sqrt(sq / n);
     if (rmse < 0.3 && maxErr < 0.8) {
-      fb.innerHTML = `<b>Mükemmel!</b> Grafikler eşdeğer (RMSE=${rmse.toFixed(2)}). +20 puan`;
+      fb.innerHTML = `<b>Mükemmel!</b> Grafikler eşdeğer (RMSE=${rmse.toFixed(2)}). +20 puan<br><small>Not: Aynı grafiği veren farklı (a, r, k) parametrizasyonları olasıdır — sınıfta «denk dönüşüm» olarak tartışılabilir.</small>`;
       fb.className = "feedback ok";
       toast("Eşdeğer grafik · +20 puan", "ok");
       recordAttempt("reffunc", true, 20);
       setTimeout(newTask, 900);
     } else {
-      fb.textContent = `Grafikler uyuşmuyor (RMSE=${rmse.toFixed(2)}, max fark=${maxErr.toFixed(2)}). Eğriyi turuncu ile üst üste getir.`;
+      fb.textContent = `Grafikler uyuşmuyor (RMSE=${rmse.toFixed(2)}, max fark=${maxErr.toFixed(2)}). Önce turuncu hedefle aynı <b>referans f(x)</b>’i seç; sonra a, r, k ile üst üste bindir.`;
       fb.className = "feedback warn";
       recordAttempt("reffunc", false);
     }
@@ -1924,6 +2001,8 @@ const AnalyticLineMod = (() => {
     node.removeEventListener("pointercancel", onDragEnd);
     node.releasePointerCapture?.(e.pointerId);
     dragging = null;
+    flashHighlight($("#an-readout"));
+    flashHighlight($("#an-eq"));
   }
 
   function render() {
@@ -1999,6 +2078,7 @@ const AnalyticLineMod = (() => {
   function onRatioSlider() {
     $("#an-ratio-num").value = Number($("#an-ratio").value).toFixed(1);
     render();
+    flashHighlight($("#an-readout"));
   }
   function onRatioNum() {
     let v = Number($("#an-ratio-num").value);
@@ -2014,6 +2094,15 @@ const AnalyticLineMod = (() => {
     $("#an-ratio").addEventListener("input", onRatioSlider);
     $("#an-ratio-num").addEventListener("input", onRatioNum);
     $("#an-ratio-num").addEventListener("blur", onRatioNum);
+    const cl = $("#an-checklist");
+    if (cl) {
+      cl.querySelectorAll("input[type=checkbox]").forEach((cb) => {
+        cb.addEventListener("change", () => {
+          const all = Array.from(cl.querySelectorAll("input[type=checkbox]")).every((x) => x.checked);
+          if (all) toast("Analitik keşif listesi tamamlandı.", "ok");
+        });
+      });
+    }
   }
   return { init };
 })();
@@ -2216,7 +2305,7 @@ const TrigMod = (() => {
     if (theta < 0) theta += 360;
     theta = clamp(Math.round(theta), 0, 360);
     $("#trig-angle").value = theta;
-    updateAll();
+    updateAll(false);
   }
   function onCircleDragEnd(e) {
     const node = e.currentTarget;
@@ -2340,9 +2429,10 @@ const TrigMod = (() => {
     $("#trig-ref").textContent = `${referenceOf(angleDeg)}°`;
   }
 
-  function updateAll() {
+  function updateAll(linkFlash) {
     const a = Number($("#trig-angle").value);
     render(a);
+    if (linkFlash) flashHighlight($("#trig-readout"));
   }
 
   // Target: rastgele bir trigonometrik koşul (sin, cos veya kadran).
@@ -2392,7 +2482,16 @@ const TrigMod = (() => {
       recordAttempt("trig", true, 12);
       setTimeout(newTask, 800);
     } else {
-      fb.textContent = note;
+      let hint = "";
+      if (task.kind === "sin") {
+        const ref = referenceOf(a);
+        hint = ` İpucu: sin(θ)=sin(180°−θ); referans açı ≈ ${ref}° — tamamlayıcı açılara bak.`;
+      } else if (task.kind === "cos") {
+        hint = " İpucu: cos θ = cos(−θ); yatay eksene göre simetri ve kadran işaretini kontrol et.";
+      } else {
+        hint = " İpucu: Kadran aralıklarını 0–90, 90–180, 180–270, 270–360 ile eşleştir.";
+      }
+      fb.textContent = note + hint;
       fb.className = "feedback warn";
       recordAttempt("trig", false);
     }
@@ -2417,12 +2516,12 @@ const TrigMod = (() => {
 
   function init() {
     buildSVG();
-    $("#trig-angle").addEventListener("input", updateAll);
+    $("#trig-angle").addEventListener("input", () => updateAll(true));
     $("#trig-check").addEventListener("click", check);
     $("#trig-new").addEventListener("click", newTask);
     $("#trig-hint").addEventListener("click", hint);
     newTask();
-    updateAll();
+    updateAll(true);
   }
   return { init };
 })();
@@ -3494,7 +3593,8 @@ const ProbMod = (() => {
   }
 
   function updateStats() {
-    const cats = MODES[state.mode].cats;
+    const modeInfo = MODES[state.mode];
+    const cats = modeInfo.cats;
     let sum = 0;
     let modeCat = null, modeCount = 0;
     cats.forEach((cat) => {
@@ -3509,12 +3609,23 @@ const ProbMod = (() => {
     $("#prob-mini").querySelector("[data-k='mean']").textContent = mean;
     $("#prob-mini").querySelector("[data-k='mode']").textContent = mode;
 
+    const theoArr = modeInfo.theo();
+    let tv = 0;
+    if (state.total > 0) {
+      cats.forEach((cat, i) => {
+        const expProb = (state.counts[cat] || 0) / state.total;
+        tv += Math.abs(expProb - theoArr[i]);
+      });
+      tv /= 2;
+    }
+    const tvEl = $("#prob-tv");
+    if (tvEl) tvEl.textContent = state.total > 0 ? tv.toFixed(4) : "—";
+
     const last = state.lastResult;
     $("#prob-last").textContent = last == null ? "Son atış: —" : `Son atış: ${last}`;
 
     // Pedagogical hint based on mode + sample size
     const fb = $("#prob-fb");
-    const modeInfo = MODES[state.mode];
     if (state.total === 0) {
       fb.textContent = "İpucu: Atış sayısı az iken deneysel dağılım düzensiz, arttıkça teorik dağılıma yakınsar.";
     } else if (state.total < 50) {
@@ -3579,6 +3690,15 @@ const ProbMod = (() => {
     $("#run-sim").addEventListener("click", runN);
     $("#add-one").addEventListener("click", rollSingle);
     $("#reset-sim").addEventListener("click", reset);
+    const prow = $("#prob-checklist");
+    if (prow) {
+      prow.querySelectorAll("input[type=checkbox]").forEach((cb) => {
+        cb.addEventListener("change", () => {
+          const all = Array.from(prow.querySelectorAll("input[type=checkbox]")).every((x) => x.checked);
+          if (all) toast("Olasılık keşif listesi tamamlandı.", "ok");
+        });
+      });
+    }
   }
   return { init };
 })();
@@ -3628,8 +3748,74 @@ const BayesMod = (() => {
     return (x * 100).toFixed(2) + "%";
   }
 
+  function computePpv(p, sens, spec) {
+    const fpr = 1 - spec;
+    const tp = p * sens;
+    const fp = (1 - p) * fpr;
+    const totPos = tp + fp;
+    return totPos > 0 ? tp / totPos : 0;
+  }
+
+  function renderKaTeX() {
+    const host = $("#bayes-katex-host");
+    if (!host) return;
+    const tex =
+      "P(H\\mid \\text{+}) = \\dfrac{P(\\text{+}\\mid H)\\,P(H)}{P(\\text{+})}";
+    if (typeof katex !== "undefined") {
+      try {
+        host.innerHTML = katex.renderToString(tex, { displayMode: true, throwOnError: false });
+        return;
+      } catch {
+        /* fall through */
+      }
+    }
+    host.innerHTML =
+      '<p style="margin:0;font-family:JetBrains Mono,ui-monospace,monospace;font-size:.88rem;">P(H|+) = P(+|H)·P(H) / P(+)</p>';
+  }
+
+  function comparePredict() {
+    const raw = ($("#bayes-predict")?.value || "").trim().replace(",", ".");
+    const pred = parseFloat(raw);
+    if (!Number.isFinite(pred) || pred < 0 || pred > 100) {
+      toast("0 ile 100 arasında bir yüzde tahmini gir.", "warn");
+      return;
+    }
+    const predP = pred / 100;
+    const { p, sens, spec } = readControls();
+    const actual = computePpv(p, sens, spec);
+    const err = Math.abs(predP - actual);
+    const fb = $("#bayes-poe-fb");
+    if (!fb) return;
+
+    let msg = "";
+    let extraClass = "";
+    // Taban oranı ihmalı: tahmin duyarlılığa (P(+|H)) yapışmış
+    if (Math.abs(predP - sens) < 0.08 && err > 0.12) {
+      msg = `Tahminin (%${pred.toFixed(1)}) duyarlılık P(+|H) = ${fmtPct(sens)} değerine çok yakın. Bu tipik bir sezgi yanılgısıdır: P(+|H) ile P(H|+) karıştırılır. Yaygınlık düşükken pozitiflerin çoğu «sağlam ama yanlış pozitif» olabilir; gerçek P(H|+) = ${fmtPct(actual)}.`;
+      extraClass = " warn";
+    } else if (err <= 0.05) {
+      msg = `Çok yakın! Tahminin %${pred.toFixed(1)}, gerçek P(H|+) ≈ ${fmtPct(actual)}.`;
+      extraClass = " ok";
+    } else if (predP > actual + 0.12) {
+      msg = `Tahminin (%${pred.toFixed(1)}) gerçek değerden (${fmtPct(actual)}) yüksek. Düşük yaygınlıkta pozitif testlerin önemli kısmı sağlam popülasyondan gelir; payda P(+) büyüdükçe arka olasılık düşer.`;
+      extraClass = " warn";
+    } else if (predP + 0.12 < actual) {
+      msg = `Tahminin (%${pred.toFixed(1)}) gerçek değerden (${fmtPct(actual)}) düşük. Yaygınlık veya duyarlılık arttıkça P(H|+) da yükselir — alan grafiğinde hasta+pozitif dilimine bak.`;
+      extraClass = " warn";
+    } else {
+      msg = `Tahmin %${pred.toFixed(1)} · Gerçek P(H|+) ≈ ${fmtPct(actual)} · Mutlak fark ≈ ${(err * 100).toFixed(1)} puan.`;
+    }
+    fb.className = "feedback poe-feedback" + extraClass;
+    fb.textContent = msg;
+  }
+
   function render() {
     const { p, sens, spec } = readControls();
+    const poeFb = $("#bayes-poe-fb");
+    if (poeFb) {
+      poeFb.textContent = "";
+      poeFb.className = "feedback poe-feedback";
+    }
     const fpr = 1 - spec; // false positive rate
     const fnr = 1 - sens; // false negative rate
 
@@ -3642,7 +3828,7 @@ const BayesMod = (() => {
     // Bayes
     const totPos = tp + fp;
     const totNeg = fn + tn;
-    const ppv = totPos > 0 ? tp / totPos : 0;     // P(H | +)
+    const ppv = computePpv(p, sens, spec);     // P(H | +)
     const npv = totNeg > 0 ? tn / totNeg : 0;     // P(¬H | -)
     const fnr_post = totNeg > 0 ? fn / totNeg : 0; // P(H | -)
 
@@ -3713,6 +3899,9 @@ const BayesMod = (() => {
 
   function init() {
     buildSVG();
+    renderKaTeX();
+    const cmp = $("#bayes-compare-predict");
+    if (cmp) cmp.addEventListener("click", comparePredict);
     ["#bayes-p", "#bayes-sens", "#bayes-spec"].forEach((sel) => {
       $(sel).addEventListener("input", render);
     });

@@ -677,6 +677,86 @@ canvas#graph {
 }
 .info-card b { color: var(--ink); }
 
+/* POE card (predict–observe–explain) */
+.poe-card {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+.poe-card-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+.poe-hint {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+.poe-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+.poe-row .primary {
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+.poe-feedback {
+  margin-top: 10px;
+  min-height: 2.5em;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.poe-explain-lbl {
+  display: block;
+  margin-top: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.poe-explain {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  resize: vertical;
+  min-height: 4.5em;
+  background: var(--surface-soft);
+}
+.poe-explain:focus {
+  outline: 2px solid rgba(99, 102, 241, 0.35);
+  outline-offset: 1px;
+  border-color: var(--primary);
+}
+.katex-wrap {
+  margin: 10px 0 4px;
+  padding: 10px 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+}
+.katex-wrap .katex-display {
+  margin: 0;
+}
+
 /* ===== Venn diagram ===== */
 .venn { width: 100%; height: 420px; background: #fff; border-radius: var(--radius-sm); border: 1px solid var(--line); }
 .venn text { font-family: inherit; fill: var(--ink); }
@@ -975,4 +1055,185 @@ canvas#graph {
   font-weight: 700;
   font-size: 12px;
   fill: var(--ink);
+}
+
+/* --- Öğretmen notu + erişilebilir geri bildirim + bağlantılı vurgu --- */
+.teacher-note {
+  margin: 10px 0;
+  padding: 8px 11px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(245,158,11,0.05));
+  border: 1px solid rgba(99,102,241,0.15);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent);
+}
+.teacher-note strong { color: var(--ink); }
+
+.feedback.ok::before,
+.feedback.warn::before {
+  display: inline-block;
+  margin-right: 6px;
+  font-weight: 800;
+}
+.feedback.ok::before { content: "✓ "; }
+.feedback.warn::before { content: "! "; }
+
+.eq.link-hl,
+.readout.link-hl,
+#ref-eq.link-hl {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
+  border-radius: 8px;
+  transition: box-shadow 0.15s ease;
+}
+
+.panel-details {
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.panel-details > summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary);
+  list-style: none;
+}
+.panel-details > summary::-webkit-details-marker { display: none; }
+.panel-details > summary::before {
+  content: "▸ ";
+  display: inline-block;
+  transition: transform var(--tr);
+}
+.panel-details[open] > summary::before { transform: rotate(90deg); }
+.panel-details .readout-nested {
+  padding: 0 12px 10px;
+  border-top: 1px solid var(--line);
+}
+
+.mini-ext {
+  margin-top: 8px;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.mini-ext .k { color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.04em; }
+.mini-ext .v { font-weight: 700; color: var(--ink); margin-left: 6px; }
+
+.explore-check {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.explore-check-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.explore-check label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+  cursor: pointer;
+  line-height: 1.35;
+}
+.explore-check input { margin-top: 3px; flex-shrink: 0; }
+
+.poe-card.poe-compact { margin-top: 8px; padding: 10px 12px; }
+.poe-card.poe-compact .poe-hint { font-size: 0.78rem; }
+
+/* —— Bölünme (EBOB/EKOK): kutu + log kaydırıcı (.field grid’inden ayrı) —— */
+.arith-controls-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.arith-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.arith-label {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.arith-num-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-size: 1.05rem;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+  transition: border-color var(--tr), box-shadow var(--tr);
+}
+.arith-num-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+.arith-slide-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.arith-slide-row input[type="range"] {
+  width: 100%;
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .arith-controls-inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.arith-hint {
+  font-size: 0.82rem;
+  margin: -2px 0 4px 0;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* —— İstatistik lab (tek nicel) —— */
+.stats-data {
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prob-hist .bar-exp { transition: none; }
+  .venn .set-region { transition: none; }
+  .toast { animation: none; }
 }
